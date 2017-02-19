@@ -12,6 +12,7 @@ class Kiwoom(QAxWidget):
         self.setControl("KHOPENAPI.KHOpenAPICtrl.1")
         self.OnEventConnect.connect(self.event_connect)
         self.OnReceiveTrData.connect(self.receive_tr_data)
+        self.OnReceiveChejanData.connect(self.OnReceiveChejanData)
 
     def comm_connect(self):
         self.dynamicCall("CommConnect()")
@@ -36,9 +37,9 @@ class Kiwoom(QAxWidget):
         name = self.dynamicCall(func)
         return name
 
-    def get_login_info(self, tag):
-        func ='GetLoginInfo("%s")' % tag
-        ret = self.dynamicCall(func)
+    def GetLoginInfo(self, sTag):
+        cmd = 'GetLoginInfo("%s")' % sTag
+        ret = self.dynamicCall(cmd)
         return ret
 
     def set_input_value(self, id, value):
@@ -72,6 +73,22 @@ class Kiwoom(QAxWidget):
     def get_repeat_cnt(self, code, record_name):
         ret = self.dynamicCall("GetRepeatCnt(QString, QString)", code, record_name)
         return ret
+
+    def SendOrder(self, sRQName, sScreenNo, sAccNo, nOrderType, sCode, nQty, nPrice, sHogaGb, sOrgOrderNo):
+        self.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)", [sRQName, sScreenNo, sAccNo, nOrderType, sCode, nQty, nPrice, sHogaGb, sOrgOrderNo])
+
+    def GetChejanData(self, nFid):
+        cmd = 'GetChejanData("%s")' % nFid
+        ret = self.dynamicCall(cmd)
+        return ret
+
+    def OnReceiveChejanData(self, sGubun, nItemCnt, sFidList):
+        print("sGubun: ", sGubun)
+        print(self.GetChejanData(9203))
+        print(self.GetChejanData(302))
+        print(self.GetChejanData(900))
+        print(self.GetChejanData(901))
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
