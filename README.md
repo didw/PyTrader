@@ -1,7 +1,7 @@
 키움 Open API + 를 이용한 시스템트레이딩
 
 ## 개발환경
- - Anaconda3-4.3.0.1 32bit (Python 3.6, PyQt5.6)
+ - Anaconda3-4.3.0.1 32bit (Python 3.6, PyQt5.6, pywinauto, pandas)
  - Windows 7/10
 
 ## 참고사이트
