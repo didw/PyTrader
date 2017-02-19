@@ -1,6 +1,5 @@
 import sys
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
+from PyQt5.QtCore import Qt, QTimer, QTime
 from PyQt5 import uic
 from Kiwoom import *
 
@@ -12,7 +11,7 @@ class MyWindow(QMainWindow, form_class):
         self.setupUi(self)
 
         self.kiwoom = Kiwoom()
-        self.kiwoom.CommConnect()
+        self.kiwoom.comm_connect()
 
         self.timer = QTimer(self)
         self.timer.start(1000)
