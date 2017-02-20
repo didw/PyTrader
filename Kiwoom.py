@@ -12,7 +12,7 @@ class Kiwoom(QAxWidget):
         self.setControl("KHOPENAPI.KHOpenAPICtrl.1")
         self.OnEventConnect.connect(self.event_connect)
         self.OnReceiveTrData.connect(self.receive_tr_data)
-        self.OnReceiveChejanData.connect(self.OnReceiveChejanData)
+        self.OnReceiveChejanData.connect(self.onReceiveChejanData)
 
     def comm_connect(self):
         self.dynamicCall("CommConnect()")
@@ -24,7 +24,6 @@ class Kiwoom(QAxWidget):
             print("connected")
         else:
             print("not connected")
-
         self.login_loop.exit()
 
     def get_codelist_by_market(self, market):
@@ -82,7 +81,7 @@ class Kiwoom(QAxWidget):
         ret = self.dynamicCall(cmd)
         return ret
 
-    def OnReceiveChejanData(self, sGubun, nItemCnt, sFidList):
+    def onReceiveChejanData(self, sGubun, nItemCnt, sFidList):
         print("sGubun: ", sGubun)
         print(self.GetChejanData(9203))
         print(self.GetChejanData(302))

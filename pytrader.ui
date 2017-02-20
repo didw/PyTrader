@@ -19,8 +19,8 @@
      <rect>
       <x>20</x>
       <y>20</y>
-      <width>181</width>
-      <height>311</height>
+      <width>261</width>
+      <height>291</height>
      </rect>
     </property>
     <property name="title">
@@ -29,9 +29,9 @@
     <widget class="QComboBox" name="comboBox_3">
      <property name="geometry">
       <rect>
-       <x>60</x>
+       <x>58</x>
        <y>140</y>
-       <width>69</width>
+       <width>101</width>
        <height>22</height>
       </rect>
      </property>
@@ -51,8 +51,8 @@
       <rect>
        <x>20</x>
        <y>200</y>
-       <width>46</width>
-       <height>13</height>
+       <width>31</width>
+       <height>20</height>
       </rect>
      </property>
      <property name="text">
@@ -64,8 +64,8 @@
       <rect>
        <x>20</x>
        <y>170</y>
-       <width>46</width>
-       <height>13</height>
+       <width>31</width>
+       <height>20</height>
       </rect>
      </property>
      <property name="text">
@@ -77,8 +77,8 @@
       <rect>
        <x>20</x>
        <y>140</y>
-       <width>46</width>
-       <height>13</height>
+       <width>31</width>
+       <height>20</height>
       </rect>
      </property>
      <property name="text">
@@ -88,9 +88,9 @@
     <widget class="QLineEdit" name="lineEdit_2">
      <property name="geometry">
       <rect>
-       <x>62</x>
+       <x>60</x>
        <y>110</y>
-       <width>111</width>
+       <width>101</width>
        <height>20</height>
       </rect>
      </property>
@@ -101,9 +101,9 @@
     <widget class="QSpinBox" name="spinBox">
      <property name="geometry">
       <rect>
-       <x>80</x>
+       <x>60</x>
        <y>170</y>
-       <width>42</width>
+       <width>101</width>
        <height>22</height>
       </rect>
      </property>
@@ -114,9 +114,9 @@
     <widget class="QSpinBox" name="spinBox_2">
      <property name="geometry">
       <rect>
-       <x>80</x>
+       <x>60</x>
        <y>200</y>
-       <width>42</width>
+       <width>101</width>
        <height>22</height>
       </rect>
      </property>
@@ -127,83 +127,107 @@
       <number>50</number>
      </property>
     </widget>
-    <widget class="QSplitter" name="splitter">
+    <widget class="QPushButton" name="pushButton">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>230</y>
+       <width>141</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>현금주문</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="lineEdit">
+     <property name="geometry">
+      <rect>
+       <x>60</x>
+       <y>80</y>
+       <width>101</width>
+       <height>20</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_3">
+     <property name="geometry">
+      <rect>
+       <x>21</x>
+       <y>80</y>
+       <width>31</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>종목</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_2">
      <property name="geometry">
       <rect>
        <x>20</x>
        <y>50</y>
-       <width>92</width>
+       <width>31</width>
        <height>20</height>
       </rect>
      </property>
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+     <property name="text">
+      <string>주문</string>
      </property>
-     <widget class="QLabel" name="label_2">
-      <property name="text">
-       <string>주문</string>
-      </property>
-     </widget>
-     <widget class="QComboBox" name="comboBox_2">
-      <item>
-       <property name="text">
-        <string>신규매수</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>신규매도</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>매수취소</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>매도취소</string>
-       </property>
-      </item>
-     </widget>
     </widget>
-    <widget class="QSplitter" name="splitter_2">
+    <widget class="QComboBox" name="comboBox_2">
      <property name="geometry">
       <rect>
-       <x>20</x>
+       <x>60</x>
+       <y>50</y>
+       <width>101</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <item>
+      <property name="text">
+       <string>신규매수</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>신규매도</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>매수취소</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>매도취소</string>
+      </property>
+     </item>
+    </widget>
+    <widget class="QComboBox" name="comboBox">
+     <property name="geometry">
+      <rect>
+       <x>60</x>
        <y>20</y>
-       <width>91</width>
+       <width>101</width>
        <height>20</height>
       </rect>
      </property>
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <widget class="QLabel" name="label">
-      <property name="text">
-       <string>계좌</string>
-      </property>
-     </widget>
-     <widget class="QComboBox" name="comboBox"/>
     </widget>
-    <widget class="QSplitter" name="splitter_3">
+    <widget class="QLabel" name="label">
      <property name="geometry">
       <rect>
-       <x>20</x>
-       <y>80</y>
-       <width>155</width>
+       <x>21</x>
+       <y>20</y>
+       <width>31</width>
        <height>20</height>
       </rect>
      </property>
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+     <property name="text">
+      <string>계좌</string>
      </property>
-     <widget class="QLabel" name="label_3">
-      <property name="text">
-       <string>종목</string>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="lineEdit"/>
     </widget>
    </widget>
   </widget>
