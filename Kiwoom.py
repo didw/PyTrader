@@ -14,6 +14,9 @@ class Kiwoom(QAxWidget):
         self.OnReceiveTrData.connect(self.onReceiveTrData)
         self.OnReceiveChejanData.connect(self.onReceiveChejanData)
 
+    def init_opw00018_data(self):
+        self.data_opw00018 = {'single': [], 'multi': []}
+
     def comm_connect(self):
         self.dynamicCall("CommConnect()")
         self.login_loop = QEventLoop()
@@ -25,21 +28,6 @@ class Kiwoom(QAxWidget):
         else:
             print("not connected")
         self.login_loop.exit()
-
-    def get_codelist_by_market(self, market):
-        func = 'GetCodeListByMarket("%s")' % market
-        codes = self.dynamicCall(func)
-        return codes.split(';')
-
-    def get_master_code_name(self, code):
-        func = 'GetMasterCodeName("%s")' % code
-        name = self.dynamicCall(func)
-        return name
-
-    def GetLoginInfo(self, sTag):
-        cmd = 'GetLoginInfo("%s")' % sTag
-        ret = self.dynamicCall(cmd)
-        return ret
 
     def set_input_value(self, id, value):
         self.dynamicCall("SetInputValue(QString, QString)", id, value)
@@ -59,12 +47,20 @@ class Kiwoom(QAxWidget):
         if rqname == "opt10081_req":
             cnt = self.get_repeat_cnt(trcode, rqname)
             for i in range(cnt):
-                date  = self.comm_get_data(trcode, "", rqname, i, "일자")
-                open  = self.comm_get_data(trcode, "", rqname, i, "시가")
-                high  = self.comm_get_data(trcode, "", rqname, i, "고가")
-                low   = self.comm_get_data(trcode, "", rqname, i, "저가")
-                end   = self.comm_get_data(trcode, "", rqname, i, "현재가")
-                print(date, open, high, low, end)
+                date   = self.comm_get_data(trcode, "", rqname, i, "일자")
+                open   = self.comm_get_data(trcode, "", rqname, i, "시가")
+                high   = self.comm_get_data(trcode, "", rqname, i, "고가")
+                low    = self.comm_get_data(trcode, "", rqname, i, "저가")
+                close  = self.comm_get_data(trcode, "", rqname, i, "현재가")
+                volume = self.comm_get_data(trcode, "", rqname, i, "거래량")
+
+                self.ohlcv['date'].append(date)
+                self.ohlcv['open'].append(int(open))
+                self.ohlcv['high'].append(int(high))
+                self.ohlcv['low'].append(int(low))
+                self.ohlcv['close'].append(int(close))
+                self.ohlcv['volume'].append(int(volume))
+
         if rqname == "opw00001_req":
             estimate_day2_deposit = self.comm_get_data(trcode, "", rqname, 0, "d+2추정예수금")
             estimate_day2_deposit = self.change_format(estimate_day2_deposit)
@@ -124,10 +120,52 @@ class Kiwoom(QAxWidget):
                 data.append(earning_rate)
 
                 self.data_opw00018['multi'].append(data)
-        self.tr_rq_loop.exit()
+        try:
+            self.tr_rq_loop.exit()
+        except AttributeError:
+            pass
 
-    def init_opw00018_data(self):
-        self.data_opw00018 = {'single': [], 'multi': []}
+    def onReceiveChejanData(self, sGubun, nItemCnt, sFidList):
+        print("sGubun: ", sGubun)
+        print(self.GetChejanData(9203))
+        print(self.GetChejanData(302))
+        print(self.GetChejanData(900))
+        print(self.GetChejanData(901))
+
+    def get_repeat_cnt(self, code, record_name):
+        ret = self.dynamicCall("GetRepeatCnt(QString, QString)", code, record_name)
+        return ret
+
+    def get_codelist_by_market(self, market):
+        func = 'GetCodeListByMarket("%s")' % market
+        codes = self.dynamicCall(func)
+        return codes.split(';')
+
+
+    def get_master_code_name(self, code):
+        func = 'GetMasterCodeName("%s")' % code
+        name = self.dynamicCall(func)
+        return name
+
+    def getConnectState(self):
+        ret = self.dynamicCall("GetConnectState()")
+        return ret
+
+    def GetLoginInfo(self, sTag):
+        cmd = 'GetLoginInfo("%s")' % sTag
+        ret = self.dynamicCall(cmd)
+        return ret
+
+    def GetChejanData(self, nFid):
+        cmd = 'GetChejanData("%s")' % nFid
+        ret = self.dynamicCall(cmd)
+        return ret
+
+    def sendOrder(self, sRQName, sScreenNo, sAccNo, nOrderType, sCode, nQty, nPrice, sHogaGb, sOrgOrderNo):
+        self.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)", [sRQName, sScreenNo, sAccNo, nOrderType, sCode, nQty, nPrice, sHogaGb, sOrgOrderNo])
+
+    def initOHLCRawData(self):
+        self.ohlcv = {'date': [], 'open': [], 'high': [], 'low': [], 'close': [], 'volume': []}
 
     def change_format(self, data, percent=0):
         is_minus = False
@@ -154,25 +192,6 @@ class Kiwoom(QAxWidget):
         if is_minus:
             form = '-' + form
         return form
-
-    def get_repeat_cnt(self, code, record_name):
-        ret = self.dynamicCall("GetRepeatCnt(QString, QString)", code, record_name)
-        return ret
-
-    def sendOrder(self, sRQName, sScreenNo, sAccNo, nOrderType, sCode, nQty, nPrice, sHogaGb, sOrgOrderNo):
-        self.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)", [sRQName, sScreenNo, sAccNo, nOrderType, sCode, nQty, nPrice, sHogaGb, sOrgOrderNo])
-
-    def GetChejanData(self, nFid):
-        cmd = 'GetChejanData("%s")' % nFid
-        ret = self.dynamicCall(cmd)
-        return ret
-
-    def onReceiveChejanData(self, sGubun, nItemCnt, sFidList):
-        print("sGubun: ", sGubun)
-        print(self.GetChejanData(9203))
-        print(self.GetChejanData(302))
-        print(self.GetChejanData(900))
-        print(self.GetChejanData(901))
 
 
 if __name__ == "__main__":
