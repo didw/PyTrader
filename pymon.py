@@ -21,12 +21,12 @@ class PyMon:
 
     def get_ohlcv(self, code, start_date):
         # Init data structure
-        self.kiwoom.InitOHLCRawData()
+        self.kiwoom.initOHLCRawData()
 
         # Request TR and get data
-        self.kiwoom.SetInputValue("종목코드", code)
-        self.kiwoom.SetInputValue("기준일자", start_date)
-        self.kiwoom.SetInputValue("수정주가구분", 1)
+        self.kiwoom.set_input_value("종목코드", code)
+        self.kiwoom.set_input_value("기준일자", start_date)
+        self.kiwoom.set_input_value("수정주가구분", 1)
         self.kiwoom.comm_rq_data("opt10081_req", "opt10081", 0, "0101")
         time.sleep(0.2)
 
