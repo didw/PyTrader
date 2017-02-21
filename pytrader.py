@@ -74,18 +74,18 @@ class MyWindow(QMainWindow, form_class):
         self.kiwoom.init_opw00018_data()
 
         # Request opw00018
-        self.kiwoom.set_input_value("계좌번호", "8086919011")
+        self.kiwoom.set_input_value("계좌번호", self.comboBox.currentText())
         self.kiwoom.set_input_value("비밀번호", "0000")
         self.kiwoom.comm_rq_data("opw00018_req", "opw00018", 0, "2000")
 
         while self.kiwoom.remained_data == '2':
             time.sleep(0.2)
-            self.kiwoom.set_input_value("계좌번호", "8086919011")
+            self.kiwoom.set_input_value("계좌번호", self.comboBox.currentText())
             self.kiwoom.set_input_value("비밀번호", "0000")
             self.kiwoom.comm_rq_data("opw00018_req", "opw00018", 2, "2000")
 
         # Request opw00001
-        self.kiwoom.set_input_value("계좌번호", "8086919011")
+        self.kiwoom.set_input_value("계좌번호", self.comboBox.currentText())
         self.kiwoom.set_input_value("비밀번호", "0000")
         self.kiwoom.comm_rq_data("opw00001_req", "opw00001", 0, "2000")
 
