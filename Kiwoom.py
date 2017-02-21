@@ -29,7 +29,7 @@ class Kiwoom(QAxWidget):
             print("not connected")
         self.login_loop.exit()
 
-    def set_input_value(self, id, value):
+    def SetInputValue(self, id, value):
         self.dynamicCall("SetInputValue(QString, QString)", id, value)
 
     def comm_rq_data(self, rqname, code, next, screen_no):
@@ -164,7 +164,7 @@ class Kiwoom(QAxWidget):
     def sendOrder(self, sRQName, sScreenNo, sAccNo, nOrderType, sCode, nQty, nPrice, sHogaGb, sOrgOrderNo):
         self.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)", [sRQName, sScreenNo, sAccNo, nOrderType, sCode, nQty, nPrice, sHogaGb, sOrgOrderNo])
 
-    def initOHLCRawData(self):
+    def InitOHLCRawData(self):
         self.ohlcv = {'date': [], 'open': [], 'high': [], 'low': [], 'close': [], 'volume': []}
 
     def change_format(self, data, percent=0):
@@ -205,14 +205,14 @@ if __name__ == "__main__":
     # opw00018
     kiwoom.init_opw00018_data()
 
-    kiwoom.set_input_value("계좌번호", "8086919011")
-    kiwoom.set_input_value("비밀번호", "0000")
+    kiwoom.SetInputValue("계좌번호", "8086919011")
+    kiwoom.SetInputValue("비밀번호", "0000")
     kiwoom.comm_rq_data("opw00018_req", "opw00018", 0, "2000")
 
     while kiwoom.remained_data == '2':
         time.sleep(0.2)
-        kiwoom.set_input_value("계좌번호", "8086919011")
-        kiwoom.set_input_value("비밀번호", "0000")
+        kiwoom.SetInputValue("계좌번호", "8086919011")
+        kiwoom.SetInputValue("비밀번호", "0000")
         kiwoom.comm_rq_data("opw00018_req", "opw00018", 2, "2000")
 
     print(kiwoom.data_opw00018['single'])
