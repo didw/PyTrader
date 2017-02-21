@@ -6,9 +6,9 @@
 
 ## 환경설정
  - account.txt에 각 로그인정보 입력
- -- 사용자id
- -- 로그인 pw
- -- 공인인증서 pw
+  - 사용자id
+  - 로그인 pw
+  - 공인인증서 pw
  - pytrader.py와 Kiwoom.py에 계좌번호와 비밀번호 설정.
 
 ## 사용법
