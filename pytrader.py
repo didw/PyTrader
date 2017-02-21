@@ -23,9 +23,13 @@ class MyWindow(QMainWindow, form_class):
         self.timer.start(1000)
         self.timer.timeout.connect(self.timeout)
 
-        self.lineEdit.textChanged.connect(self.code_changed)
+        self.timer2 = QTimer(self)
+        self.timer2.start(1000*10)
+        self.timer2.timeout.connect(self.timeout2)
 
+        self.lineEdit.textChanged.connect(self.code_changed)
         self.pushButton.clicked.connect(self.send_order)
+        self.pushButton_2.clicked.connect(self.check_balance)
 
     def timeout(self):
         current_time = QTime.currentTime()
@@ -40,6 +44,10 @@ class MyWindow(QMainWindow, form_class):
 
         self.statusbar.showMessage(state_msg + " | " + time_msg)
 
+    def timeout2(self):
+        if self.checkBox.isChecked() == True:
+            self.check_balance()
+            
     def code_changed(self):
         code = self.lineEdit.text()
         code_name = self.kiwoom.GetMasterCodeName(code)
@@ -56,6 +64,50 @@ class MyWindow(QMainWindow, form_class):
         num = self.spinBox.value()
         price = self.spinBox_2.value()
         self.kiwoom.SendOrder("SendOrder_req", "0101", account, order_type_lookup[order_type], code, num, price, hoga_lookup[hoga], "")
+
+    def check_balance(self):
+        self.kiwoom.init_opw00018_data()
+
+        # Request opw00018
+        self.kiwoom.set_input_value("계좌번호", "8086919011")
+        self.kiwoom.set_input_value("비밀번호", "0000")
+        self.kiwoom.comm_rq_data("opw00018_req", "opw00018", 0, "2000")
+
+        while self.kiwoom.remained_data == '2':
+            time.sleep(0.2)
+            self.kiwoom.set_input_value("계좌번호", "8086919011")
+            self.kiwoom.set_input_value("비밀번호", "0000")
+            self.kiwoom.comm_rq_data("opw00018_req", "opw00018", 2, "2000")
+
+        # Request opw00001
+        self.kiwoom.set_input_value("계좌번호", "8086919011")
+        self.kiwoom.set_input_value("비밀번호", "0000")
+        self.kiwoom.comm_rq_data("opw00001_req", "opw00001", 0, "2000")
+
+        # balance
+        item = QTableWidgetItem(self.kiwoom.data_opw00001)
+        item.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.tableWidget.setItem(0, 0, item)
+
+        for i in range(1, 6):
+            item = QTableWidgetItem(self.kiwoom.data_opw00018['single'][i-1])
+            item.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
+            self.tableWidget.setItem(0, i, item)
+
+        self.tableWidget.resizeRowsToContents()
+
+        # Item list
+        item_count = len(self.kiwoom.data_opw00018['multi'])
+        self.tableWidget_2.setRowCount(item_count)
+
+        for j in range(item_count):
+            row = self.kiwoom.data_opw00018['multi'][j]
+            for i in range(len(row)):
+                item = QTableWidgetItem(row[i])
+                item.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
+                self.tableWidget_2.setItem(j, i, item)
+
+        self.tableWidget_2.resizeRowsToContents()
 
 
 if __name__ == "__main__":
