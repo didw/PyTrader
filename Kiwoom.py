@@ -44,7 +44,7 @@ class Kiwoom(QAxWidget):
 
     def onReceiveTrData(self, scrno, rqname, trcode, record_name, next, unused0, unused1, unused2, unused3):
         self.remained_data = next
-        if rqname == "opt10081_req":
+        if rqname == "주식일봉차트조회요청":
             cnt = self.get_repeat_cnt(trcode, rqname)
             for i in range(cnt):
                 date   = self.comm_get_data(trcode, "", rqname, i, "일자")
@@ -61,11 +61,11 @@ class Kiwoom(QAxWidget):
                 self.ohlcv['close'].append(int(close))
                 self.ohlcv['volume'].append(int(volume))
 
-        if rqname == "opw00001_req":
+        if rqname == "예수금상세현황요청":
             estimate_day2_deposit = self.comm_get_data(trcode, "", rqname, 0, "d+2추정예수금")
             estimate_day2_deposit = self.change_format(estimate_day2_deposit)
             self.data_opw00001 = estimate_day2_deposit
-        if rqname == 'opw00018_req':
+        if rqname == '계좌평가잔고내역요청':
             # Single Data
             single = []
 
@@ -207,13 +207,13 @@ if __name__ == "__main__":
 
     kiwoom.set_input_value("계좌번호", "8086919011")
     kiwoom.set_input_value("비밀번호", "0000")
-    kiwoom.comm_rq_data("opw00018_req", "opw00018", 0, "2000")
+    kiwoom.comm_rq_data("계좌평가잔고내역요청", "opw00018", 0, "2000")
 
     while kiwoom.remained_data == '2':
         time.sleep(0.2)
         kiwoom.set_input_value("계좌번호", "8086919011")
         kiwoom.set_input_value("비밀번호", "0000")
-        kiwoom.comm_rq_data("opw00018_req", "opw00018", 2, "2000")
+        kiwoom.comm_rq_data("계좌평가잔고내역요청", "opw00018", 2, "2000")
 
     print(kiwoom.data_opw00018['single'])
     print(kiwoom.data_opw00018['multi'])

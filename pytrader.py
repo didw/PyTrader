@@ -1,3 +1,10 @@
+"""
+QtDesigner로 만든 UI와 해당 UI의 위젯에서 발생하는 이벤트를 컨트롤하는 클래스
+
+author: Jongyeol Yang
+last edit: 2017. 02. 23
+"""
+
 import sys
 from PyQt5.QtCore import Qt, QTimer, QTime
 from PyQt5 import uic
@@ -20,13 +27,15 @@ class MyWindow(QMainWindow, form_class):
         accounts_list = accounts.split(';')[0:accouns_num]
         self.comboBox.addItems(accounts_list)
 
+        # 메인 타이머
         self.timer = QTimer(self)
         self.timer.start(1000)
         self.timer.timeout.connect(self.timeout)
 
-        self.timer2 = QTimer(self)
-        self.timer2.start(1000*10)
-        self.timer2.timeout.connect(self.timeout2)
+        # 잔고 및 보유종목 조회 타이머
+        self.inquiryTimer = QTimer(self)
+        self.inquiryTimer.start(1000 * 10)
+        self.inquiryTimer.timeout.connect(self.timeout2)
 
         self.lineEdit.textChanged.connect(self.code_changed)
         self.pushButton.clicked.connect(self.send_order)
@@ -76,18 +85,18 @@ class MyWindow(QMainWindow, form_class):
         # Request opw00018
         self.kiwoom.set_input_value("계좌번호", self.comboBox.currentText())
         self.kiwoom.set_input_value("비밀번호", "0000")
-        self.kiwoom.comm_rq_data("opw00018_req", "opw00018", 0, "2000")
+        self.kiwoom.comm_rq_data("계좌평가잔고내역요청", "opw00018", 0, "2000")
 
         while self.kiwoom.remained_data == '2':
             time.sleep(0.2)
             self.kiwoom.set_input_value("계좌번호", self.comboBox.currentText())
             self.kiwoom.set_input_value("비밀번호", "0000")
-            self.kiwoom.comm_rq_data("opw00018_req", "opw00018", 2, "2000")
+            self.kiwoom.comm_rq_data("계좌평가잔고내역요청", "opw00018", 2, "2000")
 
         # Request opw00001
         self.kiwoom.set_input_value("계좌번호", self.comboBox.currentText())
         self.kiwoom.set_input_value("비밀번호", "0000")
-        self.kiwoom.comm_rq_data("opw00001_req", "opw00001", 0, "2000")
+        self.kiwoom.comm_rq_data("예수금상세현황요청", "opw00001", 0, "2000")
 
         # balance
         item = QTableWidgetItem(self.kiwoom.data_opw00001)
@@ -167,16 +176,28 @@ class MyWindow(QMainWindow, form_class):
 
         account = self.comboBox.currentText()
 
+        # 주문하기
+        buyResult = []
+        sellResult = []
+
         # buy list
         for row_data in buy_list:
             split_row_data = row_data.split(';')
-            hoga    = split_row_data[2]
             code    = split_row_data[1]
+            hoga    = split_row_data[2]
             num     = split_row_data[3]
             price   = split_row_data[4]
 
             if split_row_data[-1].rstrip() == '매수전':
                 self.kiwoom.sendOrder("SendOrder_req", "0101", account, 1, code, num, price, hoga_lookup[hoga], "")
+
+                # 주문 접수시
+                if self.kiwoom.orderNo:
+                    buyResult += automatedStocks[i].replace("매수전", "매수주문완료")
+                    self.kiwoom.orderNo = ""
+                # 주문 미접수시
+                else:
+                    buyResult += automatedStocks[i]
 
         # sell list
         for row_data in sell_list:
@@ -189,19 +210,20 @@ class MyWindow(QMainWindow, form_class):
             if split_row_data[-1].rstrip() == '매도전':
                 self.kiwoom.sendOrder("SendOrder_req", "0101", account, 2, code, num, price, hoga_lookup[hoga], "")
 
-        # buy list
-        for i, row_data in enumerate(buy_list):
-             buy_list[i] = buy_list[i].replace("매수전", "주문완료")
+                # 주문 접수시
+                if self.kiwoom.orderNo:
+                    sellResult += automatedStocks[i].replace("매도전", "매도주문완료")
+                    self.kiwoom.orderNo = ""
+                # 주문 미접수시
+                else:
+                    sellResult += automatedStocks[i]
+
 
         # file update
         f = open("buy_list.txt", 'wt')
         for row_data in buy_list:
             f.write(row_data)
         f.close()
-
-        # sell list
-        for i, row_data in enumerate(sell_list):
-             sell_list[i] = sell_list[i].replace("매도전", "주문완료")
 
         # file update
         f = open("sell_list.txt", 'wt')
