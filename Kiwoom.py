@@ -141,7 +141,6 @@ class Kiwoom(QAxWidget):
         codes = self.dynamicCall(func)
         return codes.split(';')
 
-
     def get_master_code_name(self, code):
         func = 'GetMasterCodeName("%s")' % code
         name = self.dynamicCall(func)
