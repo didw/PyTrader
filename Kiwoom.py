@@ -1,3 +1,11 @@
+"""
+Kiwoom 클래스는 OCX를 통해 API 함수를 호출할 수 있도록 구현되어 있습니다.
+OCX 사용을 위해 QAxWidget 클래스를 상속받아서 구현하였으며,
+주식(현물) 거래에 필요한 메서드들만 구현하였습니다.
+
+author: Jongyeol Yang
+last edit: 2017. 02. 23
+"""
 import sys
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -14,6 +22,9 @@ class Kiwoom(QAxWidget):
         self.OnReceiveTrData.connect(self.onReceiveTrData)
         self.OnReceiveChejanData.connect(self.onReceiveChejanData)
 
+        # 예수금 d+2
+        self.data_opw00001 = 0
+
     def init_opw00018_data(self):
         self.data_opw00018 = {'single': [], 'multi': []}
 
@@ -23,6 +34,14 @@ class Kiwoom(QAxWidget):
         self.login_loop.exec_()
 
     def event_connect(self, err_code):
+        """
+        통신 연결 상태 변경시 이벤트
+
+        returnCode가 0이면 로그인 성공
+        그 외에는 ReturnCode 클래스 참조.
+
+        :param returnCode: int
+        """
         if err_code == 0:
             print("connected")
         else:
@@ -42,17 +61,30 @@ class Kiwoom(QAxWidget):
                                field_name, index, item_name)
         return ret.strip()
 
-    def onReceiveTrData(self, scrno, rqname, trcode, record_name, next, unused0, unused1, unused2, unused3):
-        self.remained_data = next
-        if rqname == "주식일봉차트조회요청":
-            cnt = self.get_repeat_cnt(trcode, rqname)
+    def onReceiveTrData(self, screen_no, request_name, tr_code, record_name, inquiry, unused0, unused1, unused2, unused3):
+        """
+        TR 수신 이벤트
+
+        조회요청 응답을 받거나 조회데이터를 수신했을 때 호출됩니다.
+        request_name tr_code commRqData()메소드의 매개변수와 매핑되는 값 입니다.
+        조회데이터는 이 이벤트 메서드 내부에서 getCommData() 메서드를 이용해서 얻을 수 있습니다.
+
+        :param screen_no: string - 화면번호(4자리)
+        :param request_name: string - TR 요청명(commRqData() 메소드 호출시 사용된 requestName)
+        :param tr_code: string
+        :param record_name: string
+        :param inquiry: string - 조회('0': 남은 데이터 없음, '2': 남은 데이터 있음)
+        """
+        self.remained_data = inquiry
+        if request_name == "주식일봉차트조회요청":
+            cnt = self.get_repeat_cnt(tr_code, request_name)
             for i in range(cnt):
-                date   = self.comm_get_data(trcode, "", rqname, i, "일자")
-                open   = self.comm_get_data(trcode, "", rqname, i, "시가")
-                high   = self.comm_get_data(trcode, "", rqname, i, "고가")
-                low    = self.comm_get_data(trcode, "", rqname, i, "저가")
-                close  = self.comm_get_data(trcode, "", rqname, i, "현재가")
-                volume = self.comm_get_data(trcode, "", rqname, i, "거래량")
+                date   = self.comm_get_data(tr_code, "", request_name, i, "일자")
+                open   = self.comm_get_data(tr_code, "", request_name, i, "시가")
+                high   = self.comm_get_data(tr_code, "", request_name, i, "고가")
+                low    = self.comm_get_data(tr_code, "", request_name, i, "저가")
+                close  = self.comm_get_data(tr_code, "", request_name, i, "현재가")
+                volume = self.comm_get_data(tr_code, "", request_name, i, "거래량")
 
                 self.ohlcv['date'].append(date)
                 self.ohlcv['open'].append(int(open))
@@ -61,61 +93,62 @@ class Kiwoom(QAxWidget):
                 self.ohlcv['close'].append(int(close))
                 self.ohlcv['volume'].append(int(volume))
 
-        if rqname == "예수금상세현황요청":
-            estimate_day2_deposit = self.comm_get_data(trcode, "", rqname, 0, "d+2추정예수금")
+        if request_name == "예수금상세현황요청":
+            estimate_day2_deposit = self.comm_get_data(tr_code, "", request_name, 0, "d+2추정예수금")
             estimate_day2_deposit = self.change_format(estimate_day2_deposit)
             self.data_opw00001 = estimate_day2_deposit
-        if rqname == '계좌평가잔고내역요청':
+            
+        if request_name == '계좌평가잔고내역요청':
             # Single Data
             single = []
 
-            total_purchase_price = self.comm_get_data(trcode, "", rqname, 0, "총매입금액")
+            total_purchase_price = self.comm_get_data(tr_code, "", request_name, 0, "총매입금액")
             total_purchase_price = self.change_format(total_purchase_price)
             single.append(total_purchase_price)
 
-            total_eval_price = self.comm_get_data(trcode, "", rqname, 0, "총평가금액")
+            total_eval_price = self.comm_get_data(tr_code, "", request_name, 0, "총평가금액")
             total_eval_price = self.change_format(total_eval_price)
             single.append(total_eval_price)
 
-            total_eval_profit_loss_price = self.comm_get_data(trcode, "", rqname, 0, "총평가손익금액")
+            total_eval_profit_loss_price = self.comm_get_data(tr_code, "", request_name, 0, "총평가손익금액")
             total_eval_profit_loss_price = self.change_format(total_eval_profit_loss_price)
             single.append(total_eval_profit_loss_price)
 
-            total_earning_rate = self.comm_get_data(trcode, "", rqname, 0, "총수익률(%)")
+            total_earning_rate = self.comm_get_data(tr_code, "", request_name, 0, "총수익률(%)")
             total_earning_rate = self.change_format(total_earning_rate)
             single.append(total_earning_rate)
 
-            estimated_deposit = self.comm_get_data(trcode, "", rqname, 0, "추정예탁자산")
+            estimated_deposit = self.comm_get_data(tr_code, "", request_name, 0, "추정예탁자산")
             estimated_deposit = self.change_format(estimated_deposit)
             single.append(estimated_deposit)
 
             self.data_opw00018['single'] = single
 
             # Multi Data
-            cnt = self.get_repeat_cnt(trcode, rqname)
+            cnt = self.get_repeat_cnt(tr_code, request_name)
             for i in range(cnt):
                 data = []
 
-                item_name = self.comm_get_data(trcode, "", rqname, i, "종목명")
+                item_name = self.comm_get_data(tr_code, "", request_name, i, "종목명")
                 data.append(item_name)
 
-                quantity = self.comm_get_data(trcode, "", rqname, i, "보유수량")
+                quantity = self.comm_get_data(tr_code, "", request_name, i, "보유수량")
                 quantity = self.change_format(quantity)
                 data.append(quantity)
 
-                purchase_price = self.comm_get_data(trcode, "", rqname, i, "매입가")
+                purchase_price = self.comm_get_data(tr_code, "", request_name, i, "매입가")
                 purchase_price = self.change_format(purchase_price)
                 data.append(purchase_price)
 
-                current_price = self.comm_get_data(trcode, "", rqname, i, "현재가")
+                current_price = self.comm_get_data(tr_code, "", request_name, i, "현재가")
                 current_price = self.change_format(current_price)
                 data.append(current_price)
 
-                eval_profit_loss_price = self.comm_get_data(trcode, "", rqname, i, "평가손익")
+                eval_profit_loss_price = self.comm_get_data(tr_code, "", request_name, i, "평가손익")
                 eval_profit_loss_price = self.change_format(eval_profit_loss_price)
                 data.append(eval_profit_loss_price)
 
-                earning_rate = self.comm_get_data(trcode, "", rqname, i, "수익률(%)")
+                earning_rate = self.comm_get_data(tr_code, "", request_name, i, "수익률(%)")
                 earning_rate = self.change_format(earning_rate, 2)
                 data.append(earning_rate)
 

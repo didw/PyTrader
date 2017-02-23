@@ -5,10 +5,12 @@ author: Jongyeol Yang
 last edit: 2017. 02. 23
 """
 
-import sys
+
+import sys, time
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QTableWidget, QTableWidgetItem
 from PyQt5.QtCore import Qt, QTimer, QTime
 from PyQt5 import uic
-from Kiwoom import *
+from Kiwoom import Kiwoom, ParameterTypeError, ParameterValueError, KiwoomProcessingError, KiwoomConnectError
 import codecs
 
 form_class = uic.loadUiType("pytrader.ui")[0]
@@ -230,6 +232,8 @@ class MyWindow(QMainWindow, form_class):
                 else:
                     sellResult += automatedStocks[i]
 
+        # 잔고및 보유종목 디스플레이 갱신
+        self.inquiry_balance()
 
         # file update
         f = open("buy_list.txt", 'wt')
