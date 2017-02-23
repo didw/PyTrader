@@ -17,30 +17,12 @@ class Kiwoom(QAxWidget):
     def init_opw00018_data(self):
         self.data_opw00018 = {'single': [], 'multi': []}
 
-    def comm_connect(self):
-        self.dynamicCall("CommConnect()")
-        self.login_loop = QEventLoop()
-        self.login_loop.exec_()
-
     def event_connect(self, err_code):
         if err_code == 0:
             print("connected")
         else:
             print("not connected")
         self.login_loop.exit()
-
-    def set_input_value(self, id, value):
-        self.dynamicCall("SetInputValue(QString, QString)", id, value)
-
-    def comm_rq_data(self, rqname, code, next, screen_no):
-        self.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, code, next, screen_no)
-        self.tr_rq_loop = QEventLoop()
-        self.tr_rq_loop.exec_()
-
-    def comm_get_data(self, code, real_type, field_name, index, item_name):
-        ret = self.dynamicCall("CommGetData(QString, QString, QString, int, QString)", code, real_type,
-                               field_name, index, item_name)
-        return ret.strip()
 
     def onReceiveTrData(self, scrno, rqname, trcode, record_name, next, unused0, unused1, unused2, unused3):
         self.remained_data = next
@@ -142,10 +124,10 @@ class Kiwoom(QAxWidget):
         return codes.split(';')
 
 
-    def get_master_code_name(self, code):
-        func = 'GetMasterCodeName("%s")' % code
-        name = self.dynamicCall(func)
-        return name
+    def comm_connect(self):
+        self.dynamicCall("CommConnect()")
+        self.login_loop = QEventLoop()
+        self.login_loop.exec_()
 
     def getConnectState(self):
         ret = self.dynamicCall("GetConnectState()")
@@ -155,6 +137,19 @@ class Kiwoom(QAxWidget):
         cmd = 'GetLoginInfo("%s")' % sTag
         ret = self.dynamicCall(cmd)
         return ret
+
+    def set_input_value(self, id, value):
+        self.dynamicCall("SetInputValue(QString, QString)", id, value)
+
+    def comm_rq_data(self, rqname, code, next, screen_no):
+        self.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, code, next, screen_no)
+        self.tr_rq_loop = QEventLoop()
+        self.tr_rq_loop.exec_()
+
+    def comm_get_data(self, code, real_type, field_name, index, item_name):
+        ret = self.dynamicCall("CommGetData(QString, QString, QString, int, QString)", code, real_type,
+                               field_name, index, item_name)
+        return ret.strip()
 
     def GetChejanData(self, nFid):
         cmd = 'GetChejanData("%s")' % nFid
@@ -192,6 +187,11 @@ class Kiwoom(QAxWidget):
         if is_minus:
             form = '-' + form
         return form
+
+    def get_master_code_name(self, code):
+        func = 'GetMasterCodeName("%s")' % code
+        name = self.dynamicCall(func)
+        return name
 
 
 if __name__ == "__main__":
