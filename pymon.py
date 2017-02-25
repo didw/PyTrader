@@ -26,14 +26,11 @@ class PyMon:
         self.kiwoom.initOHLCRawData()
 
         # Request TR and get data
-        self.kiwoom.set_input_value("종목코드", code)
-        self.kiwoom.set_input_value("기준일자", start_date)
-        self.kiwoom.set_input_value("수정주가구분", 1)
-        self.kiwoom.comm_rq_data("주식일봉차트조회요청", "opt10081", 0, "0101")
-        time.sleep(0.2)
-
+        data = self.kiwoom.get_opt10081(code, start_date)
         # DataFrame
-        df = pd.DataFrame(self.kiwoom.ohlcv, columns=['open', 'high', 'low', 'close', 'volume'],
+        col_name = ['종목코드', '현재가', '거래량', '거래대금', '일자', '시가', '고가', '저가',
+                        '수정주가구분', '수정비율', '대업종구분', '소업종구분', '종목정보', '수정주가이벤트', '전일종가']
+        df = pd.DataFrame(data, columns=['open', 'high', 'low', 'close', 'volume'],
                           index=self.kiwoom.ohlcv['date'])
         return df
 
@@ -98,16 +95,16 @@ class PyMon:
         min_ratio = min(previous_dividend_to_treasury.values())
         max_ratio = max(previous_dividend_to_treasury.values())
 
-        return (min_ratio, max_ratio)
+        return min_ratio, max_ratio
 
     def buy_check_by_dividend_algorithm(self, code):
         estimated_dividend_to_treasury = self.calculate_estimated_dividend_to_treasury(code)
         (min_ratio, max_ratio) = self.get_min_max_dividend_to_treasury(code)
 
         if estimated_dividend_to_treasury > max_ratio:
-            return (1, estimated_dividend_to_treasury)
+            return 1, estimated_dividend_to_treasury
         else:
-            return (0, estimated_dividend_to_treasury)
+            return 0, estimated_dividend_to_treasury
 
     def run_dividend(self):
         buy_list = []

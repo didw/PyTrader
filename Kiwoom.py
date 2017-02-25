@@ -14,6 +14,7 @@ from PyQt5.QtCore import QEventLoop
 from PyQt5.QtWidgets import QApplication
 from pandas import DataFrame
 import time
+import numpy as np
 
 class Kiwoom(QAxWidget):
     def __init__(self):
@@ -51,6 +52,10 @@ class Kiwoom(QAxWidget):
 
         # 보유종목 정보
         self.data_opw00018 = {'accountEvaluation': [], 'stocks': []}
+
+        # 주가상세정보
+        self.data_opt10081 = []*15
+        self.data_opt10086 = []*23
 
         # signal & slot
         self.OnEventConnect.connect(self.event_connect)
@@ -142,21 +147,21 @@ class Kiwoom(QAxWidget):
         TR 수신 이벤트
 
         조회요청 응답을 받거나 조회데이터를 수신했을 때 호출됩니다.
-        request_name tr_code commRqData()메소드의 매개변수와 매핑되는 값 입니다.
-        조회데이터는 이 이벤트 메서드 내부에서 getCommData() 메서드를 이용해서 얻을 수 있습니다.
+        request_name tr_code comm_rq_data()메소드의 매개변수와 매핑되는 값 입니다.
+        조회데이터는 이 이벤트 메서드 내부에서 comm_get_data() 메서드를 이용해서 얻을 수 있습니다.
 
         :param screen_no: string - 화면번호(4자리)
-        :param request_name: string - TR 요청명(commRqData() 메소드 호출시 사용된 requestName)
+        :param request_name: string - TR 요청명(comm_rq_data() 메소드 호출시 사용된 requestName)
         :param tr_code: string
         :param record_name: string
         :param inquiry: string - 조회('0': 남은 데이터 없음, '2': 남은 데이터 있음)
         """
 
-        print("on_receive_tr_data 실행: ", screen_no, request_name, tr_code, record_name, inquiry)
+        print("on_receive_tr_data 실행: screen_no: %s, request_name: %s, tr_code: %s, record_name: %s, inquiry: %s" % (
+                screen_no, request_name, tr_code, record_name, inquiry))
 
         # 주문번호와 주문루프
         self.order_no = self.comm_get_data(tr_code, "", request_name, 0, "주문번호")
-        print("order_no: %s" % self.order_no)
 
         try:
             self.order_loop.exit()
@@ -164,17 +169,35 @@ class Kiwoom(QAxWidget):
             pass
 
         self.inquiry = inquiry
-        print("req_name: %s" % request_name)
+
+        if request_name == "관심종목정보요청":
+            data = self.get_comm_data_ex(tr_code, "관심종목정보")
+
+            """ commGetData
+            cnt = self.getRepeatCnt(trCode, requestName)
+
+            for i in range(cnt):
+                data = self.commGetData(trCode, "", requestName, i, "종목명")
+                print(data)
+            """
+
         if request_name == "주식일봉차트조회요청":
             data = self.get_comm_data_ex(tr_code, "주식일봉차트조회")
+            self.data_opt10081.extend(data)
+            if inquiry == "0":
+                col_name = ['종목코드', '현재가', '거래량', '거래대금', '일자', '시가', '고가', '저가',
+                            '수정주가구분', '수정비율', '대업종구분', '소업종구분', '종목정보', '수정주가이벤트', '전일종가']
+                self.data_opt10081 = DataFrame(self.data_opt10081, columns=col_name)
 
-            colName = ['종목코드', '현재가', '거래량', '거래대금', '일자', '시가', '고가', '저가',
-                       '수정주가구분', '수정비율', '대업종구분', '소업종구분', '종목정보', '수정주가이벤트', '전일종가']
-
-            data = DataFrame(data, columns=colName)
-
-            print(type(data))
-            print(data.head(5))
+        if request_name == "일별주가요청":
+            data = self.get_comm_data_ex(tr_code, "일별주가요청")
+            self.data_opt10086.extend(data)
+            if inquiry == "0":
+                col_name = ['날짜', '시가', '고가', '저가', '종가', '전일비', '등락률', '거래량',
+                            '금액(백만)', '신용비', '개인', '기관', '외인수량', '외국계', '프로그램',
+                            '외인비', '체결강도', '외인보유', '외인비중', '외인순매수', '기관순매수',
+                            '개인순매수', '신용잔고율']
+                self.data_opt10086 = DataFrame(self.data_opt10086, columns=col_name)
 
         if request_name == "예수금상세현황요청":
             estimate_day2_deposit = self.comm_get_data(tr_code, "", request_name, 0, "d+2추정예수금")
@@ -193,14 +216,10 @@ class Kiwoom(QAxWidget):
                     value = self.change_format(value, 1)
                 else:
                     value = self.change_format(value)
-
                 account_evaluation.append(value)
-
             self.data_opw00018['account_evaluation'] = account_evaluation
 
-
             # 보유 종목 정보
-
             cnt = self.get_repeat_cnt(tr_code, request_name)
             key_list = ["종목명", "보유수량", "매입가", "현재가", "평가손익", "수익률(%)"]
             for i in range(cnt):
@@ -364,7 +383,7 @@ class Kiwoom(QAxWidget):
         return_code = self.dynamicCall("CommRqData(QString, QString, int, QString)", request_name, tr_code, inquiry, screen_no)
 
         if return_code != ReturnCode.OP_ERR_NONE:
-            raise KiwoomProcessingError("commRqData(): " + ReturnCode.CAUSE[return_code])
+            raise KiwoomProcessingError("comm_rq_data(): " + ReturnCode.CAUSE[return_code])
 
         # 루프 생성: receive_tr_data() 메서드에서 루프를 종료시킨다.
         self.request_loop = QEventLoop()
@@ -378,7 +397,7 @@ class Kiwoom(QAxWidget):
 
         :param code: string
         :param real_type: string - TR 요청시 ""(빈문자)로 처리
-        :param field_name: string - TR 요청명(commRqData() 메소드 호출시 사용된 field_name)
+        :param field_name: string - TR 요청명(comm_rq_data() 메소드 호출시 사용된 field_name)
         :param index: int
         :param item_name: string - 수신 데이터에서 얻고자 하는 값의 키(출력항목이름)
         :return: string
@@ -401,7 +420,7 @@ class Kiwoom(QAxWidget):
         이러한 멀티데이터의 경우 반복 횟수(=데이터의 갯수)만큼, 루프를 돌면서 처리하기 위해 이 메서드를 이용하여 멀티데이터의 갯수를 얻을 수 있습니다.
 
         :param tr_code: string
-        :param request_name: string - TR 요청명(commRqData() 메소드 호출시 사용된 request_name)
+        :param request_name: string - TR 요청명(comm_rq_data() 메소드 호출시 사용된 request_name)
         :return: int
         """
         ret = self.dynamicCall("GetRepeatCnt(QString, QString)", tr_code, request_name)
@@ -828,11 +847,39 @@ class Kiwoom(QAxWidget):
             f = float(data)
             format_data = '{:-,.2f}'.format(f)
         return format_data
-		
+
     def opw_data_reset(self):
         """ 잔고 및 보유종목 데이터 초기화 """
         self.data_opw00001 = 0
         self.data_opw00018 = {'accountEvaluation': [], 'stocks': []}
+
+    def get_data_opt10081(self, code, date):
+        self.data_opt10081 = [] * 15
+        self.set_input_value("종목코드", code)
+        self.set_input_value("기준일자", date)
+        self.set_input_value("수정주가구분", 255)
+        self.comm_rq_data("주식일봉차트조회요청", "opt10081", 0, "0101")
+        while self.inquiry == '2':
+            time.sleep(0.2)
+            self.set_input_value("종목코드", code)
+            self.set_input_value("기준일자", date)
+            self.set_input_value("수정주가구분", 255)
+            self.comm_rq_data("주식일봉차트조회요청", "opt10081", 2, "0101")
+        return self.data_opt10081
+
+    def get_data_opt10086(self, code, date):
+        self.data_opt10086 = [] * 23
+        self.set_input_value("종목코드", "035420")
+        self.set_input_value("조회일자", "20170101")
+        self.set_input_value("표시구분", 1)
+        self.comm_rq_data("일별주가요청", "opt10086", 0, "0101")
+        while kiwoom.inquiry == '2':
+            time.sleep(0.2)
+            self.set_input_value("종목코드", "035420")
+            self.set_input_value("조회일자", "20170101")
+            self.set_input_value("표시구분", 1)
+            self.comm_rq_data("일별주가요청", "opt10086", 2, "0101")
+        return self.data_opt10086
 
 
 class ParameterTypeError(Exception):
@@ -1236,6 +1283,43 @@ class RealType(object):
         }
     }
 
+def test_to_get_account():
+    kiwoom.set_input_value("계좌번호", "8086919011")
+    kiwoom.set_input_value("비밀번호", "0000")
+    kiwoom.comm_rq_data("계좌평가잔고내역요청", "opw00018", 2, "2000")
+    while kiwoom.inquiry == '2':
+        time.sleep(0.2)
+        kiwoom.set_input_value("계좌번호", "8086919011")
+        kiwoom.set_input_value("비밀번호", "0000")
+        kiwoom.comm_rq_data("계좌평가잔고내역요청", "opw00018", 2, "2")
+
+    print(kiwoom.data_opw00018['accountEvaluation'])
+    print(kiwoom.data_opw00018['stocks'])
+
+def test_to_get_opt10081():
+    kiwoom.set_input_value("종목코드", "035420")
+    kiwoom.set_input_value("기준일자", "20170101")
+    kiwoom.set_input_value("수정주가구분", 1)
+    kiwoom.comm_rq_data("주식일봉차트조회요청", "opt10081", 0, "0101")
+    while kiwoom.inquiry == '2':
+        time.sleep(0.2)
+        kiwoom.set_input_value("종목코드", "035420")
+        kiwoom.set_input_value("기준일자", "20170101")
+        kiwoom.set_input_value("수정주가구분", 1)
+        kiwoom.comm_rq_data("주식일봉차트조회요청", "opt10081", 2, "0101")
+
+
+def test_to_get_opt10086():
+    kiwoom.set_input_value("종목코드", "035420")
+    kiwoom.set_input_value("조회일자", "20170101")
+    kiwoom.set_input_value("표시구분", 1)
+    kiwoom.comm_rq_data("일별주가요청", "opt10086", 0, "0101")
+    while kiwoom.inquiry == '2':
+        time.sleep(0.2)
+        kiwoom.set_input_value("종목코드", "035420")
+        kiwoom.set_input_value("조회일자", "20170101")
+        kiwoom.set_input_value("표시구분", 1)
+        kiwoom.comm_rq_data("일별주가요청", "opt10086", 2, "0101")
 
 
 if __name__ == "__main__":
@@ -1245,15 +1329,5 @@ if __name__ == "__main__":
     kiwoom = Kiwoom()
     kiwoom.comm_connect()
 
-    kiwoom.set_input_value("계좌번호", "4626578411")
-    kiwoom.set_input_value("비밀번호", "0000")
-    kiwoom.comm_rq_data("계좌평가잔고내역요청", "opw00018", 0, "2000")
-
-    while kiwoom.inquiry == '2':
-        time.sleep(0.2)
-        kiwoom.set_input_value("계좌번호", "4626578411")
-        kiwoom.set_input_value("비밀번호", "0000")
-        kiwoom.comm_rq_data("계좌평가잔고내역요청", "opw00018", 2, "2000")
-
-    print(kiwoom.data_opw00018['accountEvaluation'])
-    print(kiwoom.data_opw00018['stocks'])
+    data = kiwoom.get_data_opt10086("035420", "20170101")
+    print(len(data))
