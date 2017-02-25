@@ -19,15 +19,16 @@ class MyWindow(QMainWindow, form_class):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+        self.show()
 
         self.kiwoom = Kiwoom()
         self.kiwoom.comm_connect()
+        if self.kiwoom.get_login_info("GetServerGubun"):
+            self.server_gubun = "실제운영"
+        else:
+            self.server_gubun = "모의투자"
 
-        # Get Account Number
-        accouns_num = int(self.kiwoom.GetLoginInfo("ACCOUNT_CNT"))
-        accounts = self.kiwoom.GetLoginInfo("ACCNO")
-        accounts_list = accounts.split(';')[0:accouns_num]
-        self.accountComboBox.addItems(accounts_list)
+        self.code_list = self.kiwoom.get_code_list("0")
 
         # 메인 타이머
         self.timer = QTimer(self)
@@ -36,39 +37,77 @@ class MyWindow(QMainWindow, form_class):
 
         # 잔고 및 보유종목 조회 타이머
         self.inquiryTimer = QTimer(self)
-        self.inquiryTimer.start(1000 * 10)
-        self.inquiryTimer.timeout.connect(self.timeout2)
+        self.inquiryTimer.start(1000*10)
+        self.inquiryTimer.timeout.connect(self.timeout)
 
+        self.setAccountComboBox()
         self.codeLineEdit.textChanged.connect(self.set_code_name)
         self.orderBtn.clicked.connect(self.send_order)
         self.inquiryBtn.clicked.connect(self.inquiry_balance)
 
-        self.load_buy_sell_list()
-        self.conduct_buy_sell()
+        # 자동 주문
+        # 자동 주문을 활성화 하려면 True로 설정
+        self.is_automatic_order = False
+
+        # 자동 선정 종목 리스트 테이블 설정
+        self.set_automated_stocks()
 
     def timeout(self):
-        current_time = QTime.currentTime()
-        text_time = current_time.toString("hh:mm:ss")
-        time_msg = "현재시간: " + text_time
+        """ 타임아웃 이벤트가 발생하면 호출되는 메서드 """
 
-        state = self.kiwoom.GetConnectState()
-        if state == 1:
-            state_msg = "서버 연결 중"
+        # 어떤 타이머에 의해서 호출되었는지 확인
+        sender = self.sender()
+
+        # 메인 타이머
+        if id(sender) == id(self.timer):
+            current_time = QTime.currentTime().toString("hh:mm:ss")
+            automatic_order_time = QTime.currentTime().toString("hhmm")
+
+            # 상태바 설정
+            state = ""
+
+            if self.kiwoom.get_connect_state() == 1:
+
+                state = self.server_gubun + " 서버 연결중"
+            else:
+                state = "서버 미연결"
+
+            self.statusbar.showMessage("현재시간: " + current_time + " | " + state)
+
+            # 자동 주문 실행
+            # 1100은 11시 00분을 의미합니다.
+            if self.is_automatic_order and int(automatic_order_time) >= 1100:
+                self.is_automatic_order = False
+                self.automatic_order()
+                self.set_automated_stocks()
+
+            # log
+            if self.kiwoom.msg:
+                self.logTextEdit.append(self.kiwoom.msg)
+                self.kiwoom.msg = ""
+
+        # 실시간 조회 타이머
         else:
-            state_msg = "서버 미 연결 중"
-
-        self.statusbar.showMessage(state_msg + " | " + time_msg)
-
-    def timeout2(self):
-        if self.checkBox.isChecked() == True:
-            self.inquiry_balance()
-            self.load_buy_sell_list()
+            if self.realtimeCheckBox.isChecked():
+                self.inquiry_balance()
 
     def set_code_name(self):
         """ 종목코드에 해당하는 한글명을 codeNameLineEdit에 설정한다. """
         code = self.codeLineEdit.text()
-        code_name = self.kiwoom.get_master_code_name(code)
-        self.codeNameLineEdit.setText(code_name)
+
+        if code in self.code_list:
+            code_name = self.kiwoom.get_master_code_name(code)
+            self.codeNameLineEdit.setText(code_name)
+
+    def setAccountComboBox(self):
+        """ accountComboBox에 계좌번호를 설정한다. """
+
+        try:
+            cnt = int(self.kiwoom.get_login_info("ACCOUNT_CNT"))
+            accountList = self.kiwoom.get_login_info("ACCNO").split(';')
+            self.accountComboBox.addItems(accountList[0:cnt])
+        except (KiwoomConnectError, ParameterTypeError, ParameterValueError) as e:
+            self.showDialog('Critical', e)
 
     def send_order(self):
         """ 키움서버로 주문정보를 전송한다. """
@@ -83,7 +122,7 @@ class MyWindow(QMainWindow, form_class):
         price = self.priceSpinBox.value()
 		
         try:
-            self.kiwoom.SendOrder("수동주문", "0101", account, order_type, code, qty, price, hoga_type, "")
+            self.kiwoom.Send_order("수동주문", "0101", account, order_type, code, qty, price, hoga_type, "")
         except (ParameterTypeError, KiwoomProcessingError) as e:
             self.showDialog('Critical', e)
 
@@ -92,20 +131,20 @@ class MyWindow(QMainWindow, form_class):
 
         self.inquiryTimer.stop()
         try:
-            self.kiwoom.init_opw00018_data()
-            # 계좌평가잔고내역요청 - opw00018 은 한번에 20개의 종목정보를 반환
-            self.kiwoom.set_input_value("계좌번호", self.accountComboBox.currentText())
-            self.kiwoom.set_input_value("비밀번호", "0000")
-            self.kiwoom.comm_rq_data("계좌평가잔고내역요청", "opw00018", 0, "2000")
-            while self.kiwoom.remained_data == '2':
-                time.sleep(0.2)
-                self.kiwoom.set_input_value("계좌번호", self.accountComboBox.currentText())
-                self.kiwoom.set_input_value("비밀번호", "0000")
-                self.kiwoom.comm_rq_data("계좌평가잔고내역요청", "opw00018", 2, "2000")
             # 예수금상세현황요청
             self.kiwoom.set_input_value("계좌번호", self.accountComboBox.currentText())
             self.kiwoom.set_input_value("비밀번호", "0000")
             self.kiwoom.comm_rq_data("예수금상세현황요청", "opw00001", 0, "2000")
+
+            # 계좌평가잔고내역요청 - opw00018 은 한번에 20개의 종목정보를 반환
+            self.kiwoom.set_input_value("계좌번호", self.accountComboBox.currentText())
+            self.kiwoom.set_input_value("비밀번호", "0000")
+            self.kiwoom.comm_rq_data("계좌평가잔고내역요청", "opw00018", 0, "2000")
+            while self.kiwoom.inquiry == '2':
+                time.sleep(0.2)
+                self.kiwoom.set_input_value("계좌번호", self.accountComboBox.currentText())
+                self.kiwoom.set_input_value("비밀번호", "0000")
+                self.kiwoom.comm_rq_data("계좌평가잔고내역요청", "opw00018", 2, "2")
         except (ParameterTypeError, ParameterValueError, KiwoomProcessingError) as e:
             self.showDialog('Critical', e)
 
@@ -113,139 +152,135 @@ class MyWindow(QMainWindow, form_class):
 
         item = QTableWidgetItem(self.kiwoom.data_opw00001)
         item.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
-        self.tableWidget.setItem(0, 0, item)
+        self.accountEvaluationTable.setItem(0, 0, item)
 
         for i in range(1, 6):
-            item = QTableWidgetItem(self.kiwoom.data_opw00018['single'][i-1])
+            item = QTableWidgetItem(self.kiwoom.data_opw00018['account_evaluation'][i-1])
             item.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
-            self.tableWidget.setItem(0, i, item)
+            self.accountEvaluationTable.setItem(0, i, item)
 
-        self.tableWidget.resizeRowsToContents()
+        self.accountEvaluationTable.resizeRowsToContents()
 
         # Item list
-        item_count = len(self.kiwoom.data_opw00018['multi'])
+        item_count = len(self.kiwoom.data_opw00018['stocks'])
         self.stocksTable.setRowCount(item_count)
 
-        for j in range(item_count):
-            row = self.kiwoom.data_opw00018['multi'][j]
-            for i in range(len(row)):
-                item = QTableWidgetItem(row[i])
+        for i in range(item_count):
+            row = self.kiwoom.data_opw00018['stocks'][i]
+            for j in range(len(row)):
+                item = QTableWidgetItem(row[j])
                 item.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
-                self.stocksTable.setItem(j, i, item)
+                self.stocksTable.setItem(i, j, item)
 
         self.stocksTable.resizeRowsToContents()
+
+        # 데이터 초기화
+        self.kiwoom.opw_data_reset()
+
         # inquiryTimer 재시작
-        self.inquiryTimer.start(1000 * 10)
+        self.inquiryTimer.start(1000*10)
 
-    def load_buy_sell_list(self):
-        f = open("buy_list.txt", "rt")
-        buy_list = f.readlines()
-        f.close()
+    def set_automated_stocks(self):
+        file_list = ["buy_list.txt", "sell_list.txt"]
+        automated_stocks = []
 
-        f = open("sell_list.txt", "rt")
-        sell_list = f.readlines()
-        f.close()
+        try:
+            for file in file_list:
+                # utf-8로 작성된 파일을
+                # cp949 환경에서 읽기위해서 encoding 지정
+                with open(file, 'rt', encoding='euc-kr') as f:
+                    stocks_list = f.readlines()
+                    automated_stocks += stocks_list
+        except Exception as e:
+            e.msg = "set_automated_stocks() 에러"
+            self.showDialog('Critical', e)
+            return
 
-        row_count = len(buy_list) + len(sell_list)
-        self.tableWidget_3.setRowCount(row_count)
+        # 테이블 행수 설정
+        cnt = len(automated_stocks)
+        self.automatedStocksTable.setRowCount(cnt)
 
-        # buy list
-        for j in range(len(buy_list)):
-            row_data = buy_list[j]
-            split_row_data = row_data.split(';')
-            for i in range(len(split_row_data)):
-                if i == 1:
-                    name = self.kiwoom.GetMasterCodeName(split_row_data[i].rstrip())
+        # 테이블에 출력
+        for i in range(cnt):
+            stocks = automated_stocks[i].split(';')
+            for j in range(len(stocks)):
+                if j == 1:
+                    name = self.kiwoom.get_master_code_name(stocks[j].rstrip())
                     item = QTableWidgetItem(name)
                 else:
-                    item = QTableWidgetItem(split_row_data[i].rstrip())
+                    item = QTableWidgetItem(stocks[j].rstrip())
                 item.setTextAlignment(Qt.AlignVCenter | Qt.AlignCenter)
-                self.tableWidget_3.setItem(j, i, item)
+                self.automatedStocksTable.setItem(i, j, item)
+        self.automatedStocksTable.resizeRowsToContents()
 
-        # sell list
-        for j in range(len(sell_list)):
-            row_data = sell_list[j]
-            split_row_data = row_data.split(';')
-            for i in range(len(split_row_data)):
-                if i == 1:
-                    name = self.kiwoom.GetMasterCodeName(split_row_data[i].rstrip())
-                    item = QTableWidgetItem(name)
-                else:
-                    item = QTableWidgetItem(split_row_data[i].rstrip())
-                item.setTextAlignment(Qt.AlignVCenter | Qt.AlignCenter)
-                self.tableWidget_3.setItem(len(buy_list) + j, i, item)
-
-        self.tableWidget_3.resizeRowsToContents()
-
-    def conduct_buy_sell(self):
-        hoga_lookup = {'지정가': "00", '시장가': "03"}
-
-        f = open("buy_list.txt", 'rt')
-        buy_list = f.readlines()
-        f.close()
-
-        f = open("sell_list.txt", 'rt')
-        sell_list = f.readlines()
-        f.close()
-
+    def automatic_order(self):
+        file_list = ["buy_list.txt", "sell_list.txt"]
+        hoga_type_table = {'지정가': "00", '시장가': "03"}
         account = self.accountComboBox.currentText()
+        automated_stocks = []
+
+        # 파일읽기
+        try:
+            for file in file_list:
+                # utf-8로 작성된 파일을
+                # cp949 환경에서 읽기위해서 encoding 지정
+                with open(file, 'rt', encoding='utf-8') as f:
+                    stocks_list = f.readlines()
+                    automated_stocks += stocks_list
+        except Exception as e:
+            e.msg = "automaticOrder() 에러"
+            self.showDialog('Critical', e)
+            return
+
+        cnt = len(automated_stocks)
 
         # 주문하기
-        buyResult = []
-        sellResult = []
+        buy_result = []
+        sell_result = []
 
-        # buy list
-        for row_data in buy_list:
-            split_row_data = row_data.split(';')
-            code    = split_row_data[1]
-            hoga    = split_row_data[2]
-            num     = split_row_data[3]
-            price   = split_row_data[4]
+        for i in range(cnt):
+            stocks = automated_stocks[i].split(';')
 
-            if split_row_data[-1].rstrip() == '매수전':
-                self.kiwoom.sendOrder("수동주문", "0101", account, 1, code, num, price, hoga_lookup[hoga], "")
+            code = stocks[1]
+            hoga = stocks[2]
+            qty = stocks[3]
+            price = stocks[4]
 
-                # 주문 접수시
-                if self.kiwoom.orderNo:
-                    buyResult += automatedStocks[i].replace("매수전", "매수주문완료")
-                    self.kiwoom.orderNo = ""
-                # 주문 미접수시
-                else:
-                    buyResult += automatedStocks[i]
+            try:
+                if stocks[5].rstrip() == '매수전':
+                    self.kiwoom.send_order("자동매수주문", "0101", account, 1, code, int(qty), int(price), hoga_type_table[hoga], "")
 
-        # sell list
-        for row_data in sell_list:
-            split_row_data = row_data.split(';')
-            hoga    = split_row_data[2]
-            code    = split_row_data[1]
-            num     = split_row_data[3]
-            price   = split_row_data[4]
+                    # 주문 접수시
+                    if self.kiwoom.order_no:
+                        buy_result += automated_stocks[i].replace("매수전", "매수주문완료")
+                        self.kiwoom.order_no = ""
+                    # 주문 미접수시
+                    else:
+                        buy_result += automated_stocks[i]
 
-            if split_row_data[-1].rstrip() == '매도전':
-                self.kiwoom.sendOrder("수동주문", "0101", account, 2, code, num, price, hoga_lookup[hoga], "")
+                # 참고: 해당 종목을 현재도 보유하고 있다고 가정함.
+                elif stocks[5].rstrip() == '매도전':
+                    self.kiwoom.send_order("자동매도주문", "0101", account, 2, code, int(qty), int(price), hoga_type_table[hoga], "")
 
-                # 주문 접수시
-                if self.kiwoom.orderNo:
-                    sellResult += automatedStocks[i].replace("매도전", "매도주문완료")
-                    self.kiwoom.orderNo = ""
-                # 주문 미접수시
-                else:
-                    sellResult += automatedStocks[i]
+                    # 주문 접수시
+                    if self.kiwoom.order_no:
+                        sell_result += automated_stocks[i].replace("매도전", "매도주문완료")
+                        self.kiwoom.order_no = ""
+                    # 주문 미접수시
+                    else:
+                        sell_result += automated_stocks[i]
+
+            except (ParameterTypeError, KiwoomProcessingError) as e:
+                self.showDialog('Critical', e)
 
         # 잔고및 보유종목 디스플레이 갱신
-        self.inquiry_balance()
+        self.inquiryBalance()
 
-        # file update
-        f = open("buy_list.txt", 'wt')
-        for row_data in buy_list:
-            f.write(row_data)
-        f.close()
-
-        # file update
-        f = open("sell_list.txt", 'wt')
-        for row_data in sell_list:
-            f.write(row_data)
-        f.close()
+        # 결과저장하기
+        for file, result in zip(file_list, [buy_result, sell_result]):
+            with open(file, 'wt', encoding='utf-8') as f:
+                for data in result:
+                    f.write(data)
 
 
 if __name__ == "__main__":
