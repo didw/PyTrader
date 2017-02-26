@@ -95,7 +95,7 @@ class SimpleModel:
             buy_price = float(X_test[idx][1])
             if pred[idx] > buy_price*1.1:
                 res += (int(Y_test[idx]) - buy_price*1.005)*(100000/buy_price)
-                print("buy: %d, sell: %d" % (buy_price, int(Y_test[idx])))
+                print("buy: %6d, sell: %6d, earn: %6d" % (buy_price, int(Y_test[idx]), (int(Y_test[idx]) - buy_price*1.005)*(100000/buy_price)))
         print("result: %d" % res)
 
 
