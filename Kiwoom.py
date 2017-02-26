@@ -191,9 +191,10 @@ class Kiwoom(QAxWidget):
 
         if request_name == "일별주가요청":
             data = self.get_comm_data_ex(tr_code, "일별주가요청")
-            self.data_opt10086.extend(data)
+            if data is not None:
+                self.data_opt10086.extend(data)
             if inquiry == "0":
-                col_name = ['날짜', '시가', '고가', '저가', '종가', '전일비', '등락률', '거래량',
+                col_name = ['일자', '시가', '고가', '저가', '종가', '전일비', '등락률', '거래량',
                             '금액(백만)', '신용비', '개인', '기관', '외인수량', '외국계', '프로그램',
                             '외인비', '체결강도', '외인보유', '외인비중', '외인순매수', '기관순매수',
                             '개인순매수', '신용잔고율']
@@ -232,7 +233,6 @@ class Kiwoom(QAxWidget):
                         value = self.change_format(value)
                     stock.append(value)
                 self.data_opw00018['stocks'].append(stock)
-
         try:
             self.request_loop.exit()
         except AttributeError:
@@ -859,26 +859,54 @@ class Kiwoom(QAxWidget):
         self.set_input_value("기준일자", date)
         self.set_input_value("수정주가구분", 255)
         self.comm_rq_data("주식일봉차트조회요청", "opt10081", 0, "0101")
-        while self.inquiry == '2':
+        while self.inquiry == '2' and True:
             time.sleep(0.2)
             self.set_input_value("종목코드", code)
             self.set_input_value("기준일자", date)
             self.set_input_value("수정주가구분", 255)
             self.comm_rq_data("주식일봉차트조회요청", "opt10081", 2, "0101")
-        return self.data_opt10081
+        self.data_opt10081.index = self.data_opt10081.loc[:, '일자']
+        return self.data_opt10081.loc[:, ['현재가', '거래량', '거래대금', '시가', '고가', '저가']]
+
+    def get_recent_data_opt10081(self, code, date):
+        self.data_opt10081 = [] * 15
+        self.set_input_value("종목코드", code)
+        self.set_input_value("기준일자", date)
+        self.set_input_value("수정주가구분", 255)
+        self.comm_rq_data("주식일봉차트조회요청", "opt10081", 0, "0101")
+        col_name = ['종목코드', '현재가', '거래량', '거래대금', '일자', '시가', '고가', '저가',
+                    '수정주가구분', '수정비율', '대업종구분', '소업종구분', '종목정보', '수정주가이벤트', '전일종가']
+        self.data_opt10081 = DataFrame(self.data_opt10081, columns=col_name)
+        self.data_opt10081.index = self.data_opt10081.loc[:, '일자']
+        return self.data_opt10081.loc[:, ['현재가', '거래량', '거래대금', '시가', '고가', '저가']]
 
     def get_data_opt10086(self, code, date):
         self.data_opt10086 = [] * 23
-        self.set_input_value("종목코드", "035420")
-        self.set_input_value("조회일자", "20170101")
+        self.set_input_value("종목코드", code)
+        self.set_input_value("조회일자", date)
         self.set_input_value("표시구분", 1)
         self.comm_rq_data("일별주가요청", "opt10086", 0, "0101")
-        while kiwoom.inquiry == '2':
+        while self.inquiry == '2' and True:
             time.sleep(0.2)
-            self.set_input_value("종목코드", "035420")
-            self.set_input_value("조회일자", "20170101")
+            self.set_input_value("종목코드", code)
+            self.set_input_value("조회일자", date)
             self.set_input_value("표시구분", 1)
             self.comm_rq_data("일별주가요청", "opt10086", 2, "0101")
+        self.data_opt10086.index = self.data_opt10086.loc[:, '일자']
+        return self.data_opt10086
+
+    def get_recent_data_opt10086(self, code, date):
+        self.data_opt10086 = [] * 23
+        self.set_input_value("종목코드", code)
+        self.set_input_value("조회일자", date)
+        self.set_input_value("표시구분", 1)
+        self.comm_rq_data("일별주가요청", "opt10086", 0, "0101")
+        col_name = ['일자', '시가', '고가', '저가', '종가', '전일비', '등락률', '거래량',
+                    '금액(백만)', '신용비', '개인', '기관', '외인수량', '외국계', '프로그램',
+                    '외인비', '체결강도', '외인보유', '외인비중', '외인순매수', '기관순매수',
+                    '개인순매수', '신용잔고율']
+        self.data_opt10086 = DataFrame(self.data_opt10086, columns=col_name)
+        self.data_opt10086.index = self.data_opt10086.loc[:, '일자']
         return self.data_opt10086
 
 
@@ -1295,6 +1323,7 @@ def test_to_get_account():
 
     print(kiwoom.data_opw00018['accountEvaluation'])
     print(kiwoom.data_opw00018['stocks'])
+
 
 def test_to_get_opt10081():
     kiwoom.set_input_value("종목코드", "035420")

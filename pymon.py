@@ -29,7 +29,7 @@ class PyMon:
         data = self.kiwoom.get_opt10081(code, start_date)
         # DataFrame
         col_name = ['종목코드', '현재가', '거래량', '거래대금', '일자', '시가', '고가', '저가',
-                        '수정주가구분', '수정비율', '대업종구분', '소업종구분', '종목정보', '수정주가이벤트', '전일종가']
+                    '수정주가구분', '수정비율', '대업종구분', '소업종구분', '종목정보', '수정주가이벤트', '전일종가']
         df = pd.DataFrame(data, columns=['open', 'high', 'low', 'close', 'volume'],
                           index=self.kiwoom.ohlcv['date'])
         return df
