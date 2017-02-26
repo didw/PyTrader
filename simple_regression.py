@@ -8,6 +8,8 @@ import os
 class SimpleModel:
     def __init__(self):
         self.data = dict()
+        self.frame_len = 30
+        self.predict_dist = 5
 
     def load_all_data(self, begin_date, end_date):
         con = sqlite3.connect('stock.db')
@@ -25,10 +27,6 @@ class SimpleModel:
                 X_data.extend(X)
                 Y_data.extend(Y)
                 print(np.shape(X_data), np.shape(Y_data))
-                continue
-                X_data = np.append(X_data, X, axis=0)
-                Y_data = np.append(Y_data, Y)
-                print(np.shape(X_data), np.shape(Y_data))
         return np.array(X_data), np.array(Y_data)
 
     def load_data(self, code, begin_date, end_date):
@@ -44,8 +42,6 @@ class SimpleModel:
         return data
 
     def make_x_y(self, data):
-        self.frame_len = 30
-        self.predict_dist = 5
         data_x = []
         data_y = []
         for col in data.columns:
@@ -83,11 +79,13 @@ class SimpleModel:
 
     def evaluate_model(self, X_test, Y_test):
         print("Evaluate model %d_%d.pkl" % (self.frame_len, self.predict_dist))
+        model_name = "simple_reg_model/%d_%d.pkl" % (self.frame_len, self.predict_dist)
+        self.estimator = joblib.load(model_name)
         pred = self.estimator.predict(X_test)
         res = 0
         score = 0
         assert(len(pred) == len(Y_test))
-        score += np.sqrt(np.mean((Y_test - pred)*(Y_test - pred)))
+        score += np.sqrt(np.reduce_mean((Y_test - pred)*(Y_test - pred)))
         print("score: %f" % score)
         for idx in range(len(pred)):
             buy_price = X_test[idx][1]
@@ -98,8 +96,8 @@ class SimpleModel:
 
 if __name__ == '__main__':
     sm = SimpleModel()
-    X_train, Y_train = sm.load_all_data(20100101, 20151231)
-    sm.train_model(X_train, Y_train)
+    #X_train, Y_train = sm.load_all_data(20100101, 20151231)
+    #sm.train_model(X_train, Y_train)
 
     X_test, Y_test = sm.load_all_data(20160101, 20161231)
     sm.evaluate_model(X_test, Y_test)
