@@ -907,6 +907,8 @@ class Kiwoom(QAxWidget):
                     '개인순매수', '신용잔고율']
         self.data_opt10086 = DataFrame(self.data_opt10086, columns=col_name)
         self.data_opt10086.index = self.data_opt10086.loc[:, '일자']
+        self.data_opt10086.loc[:, '기관'] = self.data_opt10086.loc[:, '기관'].str.replace('--', '-')
+        self.data_opt10086.loc[:, '기관순매수'] = self.data_opt10086.loc[:, '기관순매수'].str.replace('--', '-')
         return self.data_opt10086
 
 
