@@ -20,22 +20,22 @@ class DailyData:
         self.kosdak_codes = self.kiwoom.get_codelist_by_market(MARKET_KOSDAK)
 
     def save_all_data(self):
-        today = datetime.date(2017, 2, 1).strftime("%Y%m%d")
+        today = datetime.date.today().strftime("%Y%m%d")
         print(today, len(self.kosdak_codes), len(self.kospi_codes))
-        for code in self.kospi_codes[11:12]:
+        for code in self.kospi_codes:
             print("get data of %s" % code)
             self.save_table(code, today)
-        for code in self.kosdak_codes[11:11]:
+        for code in self.kosdak_codes:
             print("get data of %s" % code)
             self.save_table(code, today)
 
     def update_all_data(self):
         today = datetime.date.today().strftime("%Y%m%d")
         print(today, len(self.kosdak_codes), len(self.kospi_codes))
-        for code in self.kospi_codes[11:12]:
+        for code in self.kospi_codes:
             print("update data of %s" % code)
             self.update_table(code, today)
-        for code in self.kosdak_codes[11:11]:
+        for code in self.kosdak_codes:
             print("update data of %s" % code)
             self.update_table(code, today)
 
@@ -66,6 +66,6 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
 
     daily_data = DailyData()
-    daily_data.update_all_data()
+    daily_data.save_all_data()
 
 
