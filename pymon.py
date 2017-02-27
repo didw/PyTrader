@@ -2,7 +2,7 @@ import sys
 from PyQt5.QtCore import Qt, QTimer, QTime
 from PyQt5 import uic
 from PyQt5.QtWidgets import *
-import Kiwoom
+import test_kiwoom
 import pandas as pd
 import time
 import datetime
@@ -13,7 +13,7 @@ MARKET_KOSDAK  = 10
 
 class PyMon:
     def __init__(self):
-        self.kiwoom = Kiwoom.Kiwoom()
+        self.kiwoom = test_kiwoom.Kiwoom()
         self.kiwoom.comm_connect()
         self.get_code_list()
 

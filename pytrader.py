@@ -10,7 +10,7 @@ import sys, time
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QTableWidget, QTableWidgetItem
 from PyQt5.QtCore import Qt, QTimer, QTime
 from PyQt5 import uic
-from Kiwoom import Kiwoom, ParameterTypeError, ParameterValueError, KiwoomProcessingError, KiwoomConnectError
+from test_kiwoom import Kiwoom, ParameterTypeError, ParameterValueError, KiwoomProcessingError, KiwoomConnectError
 import codecs
 
 form_class = uic.loadUiType("pytrader.ui")[0]

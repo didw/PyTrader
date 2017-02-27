@@ -16,6 +16,7 @@ from pandas import DataFrame
 import time
 import numpy as np
 
+
 class Kiwoom(QAxWidget):
     def __init__(self):
         super().__init__()
@@ -54,8 +55,8 @@ class Kiwoom(QAxWidget):
         self.data_opw00018 = {'accountEvaluation': [], 'stocks': []}
 
         # 주가상세정보
-        self.data_opt10081 = []*15
-        self.data_opt10086 = []*23
+        self.data_opt10081 = [] * 15
+        self.data_opt10086 = [] * 23
 
         # signal & slot
         self.OnEventConnect.connect(self.event_connect)
@@ -142,7 +143,8 @@ class Kiwoom(QAxWidget):
 
         self.msg += request_name + ": " + msg + "\r\n\r\n"
 
-    def on_receive_tr_data(self, screen_no, request_name, tr_code, record_name, inquiry, unused0, unused1, unused2, unused3):
+    def on_receive_tr_data(self, screen_no, request_name, tr_code, record_name, inquiry, unused0, unused1, unused2,
+                           unused3):
         """
         TR 수신 이벤트
 
@@ -158,7 +160,7 @@ class Kiwoom(QAxWidget):
         """
 
         print("on_receive_tr_data 실행: screen_no: %s, request_name: %s, tr_code: %s, record_name: %s, inquiry: %s" % (
-                screen_no, request_name, tr_code, record_name, inquiry))
+            screen_no, request_name, tr_code, record_name, inquiry))
 
         # 주문번호와 주문루프
         self.order_no = self.comm_get_data(tr_code, "", request_name, 0, "주문번호")
@@ -204,7 +206,7 @@ class Kiwoom(QAxWidget):
             estimate_day2_deposit = self.comm_get_data(tr_code, "", request_name, 0, "d+2추정예수금")
             estimate_day2_deposit = self.change_format(estimate_day2_deposit)
             self.data_opw00001 = estimate_day2_deposit
-            
+
         if request_name == '계좌평가잔고내역요청':
             # 계좌 평가 정보
             account_evaluation = []
@@ -377,10 +379,10 @@ class Kiwoom(QAxWidget):
                 and isinstance(tr_code, str)
                 and isinstance(inquiry, int)
                 and isinstance(screen_no, str)):
-
             raise ParameterTypeError()
 
-        return_code = self.dynamicCall("CommRqData(QString, QString, int, QString)", request_name, tr_code, inquiry, screen_no)
+        return_code = self.dynamicCall("CommRqData(QString, QString, int, QString)", request_name, tr_code, inquiry,
+                                       screen_no)
 
         if return_code != ReturnCode.OP_ERR_NONE:
             raise KiwoomProcessingError("comm_rq_data(): " + ReturnCode.CAUSE[return_code])
@@ -481,7 +483,6 @@ class Kiwoom(QAxWidget):
                 and isinstance(requestName, str)
                 and isinstance(screenNo, str)
                 and isinstance(typeFlag, int)):
-
             raise ParameterTypeError()
 
         returnCode = self.dynamicCall("CommKwRqData(QString, QBoolean, int, int, QString, QString)",
@@ -582,7 +583,6 @@ class Kiwoom(QAxWidget):
             raise ParameterTypeError()
 
         self.dynamicCall("SetRealRemove(QString, QString)", screen_no, code)
-
 
     ###############################################################
     # 메서드 정의: 조건검색 관련 메서드와 이벤트                            #
@@ -724,7 +724,7 @@ class Kiwoom(QAxWidget):
             raise ParameterTypeError()
 
         is_request = self.dynamicCall("SendCondition(QString, QString, int, int",
-                                     screen_no, condition_name, condition_index, is_real_time)
+                                      screen_no, condition_name, condition_index, is_real_time)
 
         if not is_request:
             raise KiwoomProcessingError("sendCondition(): 조건검색 요청 실패")
@@ -745,7 +745,6 @@ class Kiwoom(QAxWidget):
             raise ParameterTypeError()
 
         self.dynamicCall("SendConditionStop(QString, QString, int)", screen_no, condition_name, condition_index)
-
 
     ###############################################################
     # 메서드 정의: 주문과 잔고처리 관련 메서드                              #
@@ -784,10 +783,11 @@ class Kiwoom(QAxWidget):
                 and isinstance(price, int)
                 and isinstance(hoga_type, str)
                 and isinstance(origin_order_no, str)):
-
             raise ParameterTypeError()
 
-        return_code = self.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)", [request_name, screen_no, account_no, order_type, code, qty, price, hoga_type, origin_order_no])
+        return_code = self.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
+                                       [request_name, screen_no, account_no, order_type, code, qty, price, hoga_type,
+                                        origin_order_no])
 
         if return_code != ReturnCode.OP_ERR_NONE:
             raise KiwoomProcessingError("send_order(): " + ReturnCode.CAUSE[return_code])
@@ -853,64 +853,6 @@ class Kiwoom(QAxWidget):
         self.data_opw00001 = 0
         self.data_opw00018 = {'accountEvaluation': [], 'stocks': []}
 
-    def get_data_opt10081(self, code, date):
-        self.data_opt10081 = [] * 15
-        self.set_input_value("종목코드", code)
-        self.set_input_value("기준일자", date)
-        self.set_input_value("수정주가구분", 255)
-        self.comm_rq_data("주식일봉차트조회요청", "opt10081", 0, "0101")
-        while self.inquiry == '2' and True:
-            time.sleep(0.2)
-            self.set_input_value("종목코드", code)
-            self.set_input_value("기준일자", date)
-            self.set_input_value("수정주가구분", 255)
-            self.comm_rq_data("주식일봉차트조회요청", "opt10081", 2, "0101")
-        self.data_opt10081.index = self.data_opt10081.loc[:, '일자']
-        return self.data_opt10081.loc[:, ['현재가', '거래량', '거래대금', '시가', '고가', '저가']]
-
-    def get_recent_data_opt10081(self, code, date):
-        self.data_opt10081 = [] * 15
-        self.set_input_value("종목코드", code)
-        self.set_input_value("기준일자", date)
-        self.set_input_value("수정주가구분", 255)
-        self.comm_rq_data("주식일봉차트조회요청", "opt10081", 0, "0101")
-        col_name = ['종목코드', '현재가', '거래량', '거래대금', '일자', '시가', '고가', '저가',
-                    '수정주가구분', '수정비율', '대업종구분', '소업종구분', '종목정보', '수정주가이벤트', '전일종가']
-        self.data_opt10081 = DataFrame(self.data_opt10081, columns=col_name)
-        self.data_opt10081.index = self.data_opt10081.loc[:, '일자']
-        return self.data_opt10081.loc[:, ['현재가', '거래량', '거래대금', '시가', '고가', '저가']]
-
-    def get_data_opt10086(self, code, date):
-        self.data_opt10086 = [] * 23
-        self.set_input_value("종목코드", code)
-        self.set_input_value("조회일자", date)
-        self.set_input_value("표시구분", 1)
-        self.comm_rq_data("일별주가요청", "opt10086", 0, "0101")
-        while self.inquiry == '2' and True:
-            time.sleep(0.2)
-            self.set_input_value("종목코드", code)
-            self.set_input_value("조회일자", date)
-            self.set_input_value("표시구분", 1)
-            self.comm_rq_data("일별주가요청", "opt10086", 2, "0101")
-        self.data_opt10086.index = self.data_opt10086.loc[:, '일자']
-        return self.data_opt10086
-
-    def get_recent_data_opt10086(self, code, date):
-        self.data_opt10086 = [] * 23
-        self.set_input_value("종목코드", code)
-        self.set_input_value("조회일자", date)
-        self.set_input_value("표시구분", 1)
-        self.comm_rq_data("일별주가요청", "opt10086", 0, "0101")
-        col_name = ['일자', '시가', '고가', '저가', '종가', '전일비', '등락률', '거래량',
-                    '금액(백만)', '신용비', '개인', '기관', '외인수량', '외국계', '프로그램',
-                    '외인비', '체결강도', '외인보유', '외인비중', '외인순매수', '기관순매수',
-                    '개인순매수', '신용잔고율']
-        self.data_opt10086 = DataFrame(self.data_opt10086, columns=col_name)
-        self.data_opt10086.index = self.data_opt10086.loc[:, '일자']
-        for col in self.data_opt10086.columns:
-            self.data_opt10086.loc[:, col] = self.data_opt10086.loc[:, col].str.replace('--', '-')
-        return self.data_opt10086
-
 
 class ParameterTypeError(Exception):
     """ 파라미터 타입이 일치하지 않을 경우 발생하는 예외 """
@@ -958,36 +900,36 @@ class KiwoomConnectError(Exception):
 class ReturnCode(object):
     """ 키움 OpenApi+ 함수들이 반환하는 값 """
 
-    OP_ERR_NONE = 0 # 정상처리
-    OP_ERR_FAIL = -10   # 실패
-    OP_ERR_LOGIN = -100 # 사용자정보교환실패
-    OP_ERR_CONNECT = -101   # 서버접속실패
-    OP_ERR_VERSION = -102   # 버전처리실패
+    OP_ERR_NONE = 0  # 정상처리
+    OP_ERR_FAIL = -10  # 실패
+    OP_ERR_LOGIN = -100  # 사용자정보교환실패
+    OP_ERR_CONNECT = -101  # 서버접속실패
+    OP_ERR_VERSION = -102  # 버전처리실패
     OP_ERR_FIREWALL = -103  # 개인방화벽실패
-    OP_ERR_MEMORY = -104    # 메모리보호실패
-    OP_ERR_INPUT = -105 # 함수입력값오류
-    OP_ERR_SOCKET_CLOSED = -106 # 통신연결종료
-    OP_ERR_SISE_OVERFLOW = -200 # 시세조회과부하
-    OP_ERR_RQ_STRUCT_FAIL = -201    # 전문작성초기화실패
-    OP_ERR_RQ_STRING_FAIL = -202    # 전문작성입력값오류
-    OP_ERR_NO_DATA = -203   # 데이터없음
-    OP_ERR_OVER_MAX_DATA = -204 # 조회가능한종목수초과
-    OP_ERR_DATA_RCV_FAIL = -205 # 데이터수신실패
+    OP_ERR_MEMORY = -104  # 메모리보호실패
+    OP_ERR_INPUT = -105  # 함수입력값오류
+    OP_ERR_SOCKET_CLOSED = -106  # 통신연결종료
+    OP_ERR_SISE_OVERFLOW = -200  # 시세조회과부하
+    OP_ERR_RQ_STRUCT_FAIL = -201  # 전문작성초기화실패
+    OP_ERR_RQ_STRING_FAIL = -202  # 전문작성입력값오류
+    OP_ERR_NO_DATA = -203  # 데이터없음
+    OP_ERR_OVER_MAX_DATA = -204  # 조회가능한종목수초과
+    OP_ERR_DATA_RCV_FAIL = -205  # 데이터수신실패
     OP_ERR_OVER_MAX_FID = -206  # 조회가능한FID수초과
-    OP_ERR_REAL_CANCEL = -207   # 실시간해제오류
-    OP_ERR_ORD_WRONG_INPUT = -300   # 입력값오류
+    OP_ERR_REAL_CANCEL = -207  # 실시간해제오류
+    OP_ERR_ORD_WRONG_INPUT = -300  # 입력값오류
     OP_ERR_ORD_WRONG_ACCTNO = -301  # 계좌비밀번호없음
-    OP_ERR_OTHER_ACC_USE = -302 # 타인계좌사용오류
-    OP_ERR_MIS_2BILL_EXC = -303 # 주문가격이20억원을초과
-    OP_ERR_MIS_5BILL_EXC = -304 # 주문가격이50억원을초과
+    OP_ERR_OTHER_ACC_USE = -302  # 타인계좌사용오류
+    OP_ERR_MIS_2BILL_EXC = -303  # 주문가격이20억원을초과
+    OP_ERR_MIS_5BILL_EXC = -304  # 주문가격이50억원을초과
     OP_ERR_MIS_1PER_EXC = -305  # 주문수량이총발행주수의1%초과오류
     OP_ERR_MIS_3PER_EXC = -306  # 주문수량이총발행주수의3%초과오류
-    OP_ERR_SEND_FAIL = -307 # 주문전송실패
+    OP_ERR_SEND_FAIL = -307  # 주문전송실패
     OP_ERR_ORD_OVERFLOW = -308  # 주문전송과부하
-    OP_ERR_MIS_300CNT_EXC = -309    # 주문수량300계약초과
-    OP_ERR_MIS_500CNT_EXC = -310    # 주문수량500계약초과
-    OP_ERR_ORD_WRONG_ACCTINFO = -340    # 계좌정보없음
-    OP_ERR_ORD_SYMCODE_EMPTY = -500 # 종목코드없음
+    OP_ERR_MIS_300CNT_EXC = -309  # 주문수량300계약초과
+    OP_ERR_MIS_500CNT_EXC = -310  # 주문수량500계약초과
+    OP_ERR_ORD_WRONG_ACCTINFO = -340  # 계좌정보없음
+    OP_ERR_ORD_SYMCODE_EMPTY = -500  # 종목코드없음
 
     CAUSE = {
         0: '정상처리',
@@ -1312,6 +1254,7 @@ class RealType(object):
             136: '시간외매수호가총잔량직전대비'
         }
     }
+
 
 def test_to_get_account():
     kiwoom.set_input_value("계좌번호", "8086919011")

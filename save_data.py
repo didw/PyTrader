@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QApplication
-from Kiwoom import Kiwoom, ParameterTypeError, ParameterValueError, KiwoomProcessingError, KiwoomConnectError
+from test_kiwoom import Kiwoom, ParameterTypeError, ParameterValueError, KiwoomProcessingError, KiwoomConnectError
 import numpy as np
 import pandas as pd
 import sqlite3
