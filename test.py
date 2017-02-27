@@ -1,4 +1,5 @@
 import pandas as pd
+import sqlite3
 
 def test_dataframe_replace():
     a = pd.DataFrame([{'a': '20170102', 'b': '--10', 'c': '+20'}, {'a': '20170103', 'b': '--20', 'c': '--20'}])
@@ -7,6 +8,27 @@ def test_dataframe_replace():
         a.loc[:,c] = a.loc[:,c].str.replace('--', '-')
     print(a)
 
+def concat_df():
+    A = pd.DataFrame([{'일자':'20161201', '가격': '1231', '거래': '1231'}, {'일자':'20161200', '가격': '1231', '거래': '1231'}])
+    B = pd.DataFrame([{'일자':'20161101', '가격': '1231', '거래': '1231'}, {'일자':'20161100', '가격': '1231', '거래': '1231'}])
+    C = A.loc[:, ['가격', '거래']]
+    C.index = A.loc[:,'일자']
+    D = B.loc[:, ['가격', '거래']]
+    D.index = B.loc[:,'일자']
+    print(C)
+    print(D)
+    E = pd.concat([C,D], axis=0)
+    print(E)
+    F = E.loc[E.index < C.index[0]]
+    print(F)
+
+def get_sqlite(code):
+    con = sqlite3.connect("stock.db")
+    data = pd.read_sql("SELECT * from '%s'" % code, con, index_col='일자')
+    print(data.index[0])
+    print(data.head())
+    data = data.loc[data.index > '20170102']
+    data.to_sql(code, con, if_exists='replace')
 
 if __name__ == '__main__':
-    test_dataframe_replace()
+    get_sqlite('000300')

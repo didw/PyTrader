@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import QApplication
 from pandas import DataFrame
 import time
 import numpy as np
-
+from datetime import datetime
 
 class Kiwoom(QAxWidget):
     def __init__(self):
@@ -186,7 +186,11 @@ class Kiwoom(QAxWidget):
         if request_name == "주식일봉차트조회요청":
             data = self.get_comm_data_ex(tr_code, "주식일봉차트조회")
             self.data_opt10081.extend(data)
-            if inquiry == "0":
+            date = data[0][4]
+            dt = datetime.strptime(date, "%Y%m%d")
+            if dt <= self.start_date:
+                self.inquiry = 0
+            if inquiry == "0" or self.inquiry == 0:
                 col_name = ['종목코드', '현재가', '거래량', '거래대금', '일자', '시가', '고가', '저가',
                             '수정주가구분', '수정비율', '대업종구분', '소업종구분', '종목정보', '수정주가이벤트', '전일종가']
                 self.data_opt10081 = DataFrame(self.data_opt10081, columns=col_name)
@@ -195,7 +199,11 @@ class Kiwoom(QAxWidget):
             data = self.get_comm_data_ex(tr_code, "일별주가요청")
             if data is not None:
                 self.data_opt10086.extend(data)
-            if inquiry == "0":
+            date = data[0][0]
+            dt = datetime.strptime(date, "%Y%m%d")
+            if dt <= self.start_date:
+                self.inquiry = 0
+            if inquiry == "0" or self.inquiry == 0:
                 col_name = ['일자', '시가', '고가', '저가', '종가', '전일비', '등락률', '거래량',
                             '금액(백만)', '신용비', '개인', '기관', '외인수량', '외국계', '프로그램',
                             '외인비', '체결강도', '외인보유', '외인비중', '외인순매수', '기관순매수',
