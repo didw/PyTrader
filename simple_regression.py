@@ -31,13 +31,9 @@ class SimpleModel:
 
     def load_data(self, code, begin_date, end_date):
         con = sqlite3.connect('stock.db')
-        df = pd.read_sql("SELECT * from '%s'" % code, con).sort_values(by=['일자'], ascending=True)
-        remove_index = []
-        for idx in range(len(df)):
-            date = int(df['일자'][idx])
-            if date < begin_date or date > end_date:
-                remove_index.append(idx)
-        data = df.drop(df.index[remove_index])
+        df = pd.read_sql("SELECT * from '%s'" % code, con, index_col='일자')
+        data = df.loc[df.index > str(begin_date)]
+        data = data.loc[data.index < str(end_date)]
         data = data.reset_index()
         return data
 
@@ -51,8 +47,8 @@ class SimpleModel:
             except AttributeError as e:
                 pass
                 print(e)
-        data.loc[:,'일자'] = data.loc[:,'일자'].str[4:6]
-        data = data.drop(['index', '체결강도'], axis=1)
+        data.loc[:, 'month'] = data.loc[:, '일자'].str[4:6]
+        data = data.drop(['체결강도'], axis=1)
         for i in range(self.frame_len+self.predict_dist, len(data)):
             """
             for c in data.columns:
@@ -65,7 +61,7 @@ class SimpleModel:
             #print(np.array(data.iloc[i-frame_len:i, :]))
             data_x.extend(np.array(data.iloc[i-self.frame_len:i, :]))
             data_y.extend(data.loc[i-self.frame_len-self.predict_dist, ['현재가']])
-        np_x = np.array(data_x).reshape(-1, 23*30)
+        np_x = np.array(data_x).reshape(-1, 24*30)
         np_y = np.array(data_y)
         return np_x, np_y
 
@@ -101,8 +97,8 @@ class SimpleModel:
 
 if __name__ == '__main__':
     sm = SimpleModel()
-    #X_train, Y_train = sm.load_all_data(20100101, 20151231)
-    #sm.train_model(X_train, Y_train)
+    X_train, Y_train = sm.load_all_data(20100101, 20151231)
+    sm.train_model(X_train, Y_train)
 
     X_test, Y_test = sm.load_all_data(20160101, 20161231)
     sm.evaluate_model(X_test, Y_test)
