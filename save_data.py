@@ -40,11 +40,12 @@ class DailyData:
         data = pd.concat([data_81, data_86.loc[:, col_86]], axis=1)
         con = sqlite3.connect("stock.db")
         try:
-            orig_data = pd.read_sql("SELECT * FROM '%s'" % code, con, index_col='index')
+            data = data.loc[data.index > self.kiwoom.start_date.strftime("%Y%m%d")]
+            orig_data = pd.read_sql("SELECT * FROM '%s'" % code, con, index_col='일자')
             end_date = max(orig_data.index[0], orig_data.index[-1])
-            print("date: ", end_date)
             data = data.loc[data.index > end_date]
             data = pd.concat([orig_data, data], axis=0)
+            data.index.name = '일자'
         except pd.io.sql.DatabaseError as e:
             print(e)
             pass

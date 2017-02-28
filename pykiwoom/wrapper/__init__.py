@@ -16,7 +16,7 @@ class KiwoomWrapper:
     def get_data_opt10081(self, code, date='20161231'):
         con = sqlite3.connect("stock.db")
         try:
-            data = pd.read_sql("SELECT * from '%s'" % code, con, index_col='index')
+            data = pd.read_sql("SELECT * from '%s'" % code, con, index_col='일자')
             start = max(data.index[0], data.index[-1])
         except pd.io.sql.DatabaseError as e:
             start = "20010101"
@@ -39,7 +39,7 @@ class KiwoomWrapper:
     def get_data_opt10086(self, code, date):
         con = sqlite3.connect("stock.db")
         try:
-            data = pd.read_sql("SELECT * from '%s'" % code, con, index_col='index')
+            data = pd.read_sql("SELECT * from '%s'" % code, con, index_col='일자')
             start = max(data.index[0], data.index[-1])
         except pd.io.sql.DatabaseError as e:
             start = "20010101"
