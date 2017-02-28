@@ -10,7 +10,8 @@ import sys, time
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QTableWidget, QTableWidgetItem
 from PyQt5.QtCore import Qt, QTimer, QTime
 from PyQt5 import uic
-from test_kiwoom import Kiwoom, ParameterTypeError, ParameterValueError, KiwoomProcessingError, KiwoomConnectError
+from pykiwoom.kiwoom import *
+from pykiwoom.wrapper import *
 import codecs
 
 form_class = uic.loadUiType("pytrader.ui")[0]
@@ -23,6 +24,7 @@ class MyWindow(QMainWindow, form_class):
 
         self.kiwoom = Kiwoom()
         self.kiwoom.comm_connect()
+        self.wrapper = KiwoomWrapper(self.kiwoom)
         if self.kiwoom.get_login_info("GetServerGubun"):
             self.server_gubun = "실제운영"
         else:
@@ -47,7 +49,7 @@ class MyWindow(QMainWindow, form_class):
 
         # 자동 주문
         # 자동 주문을 활성화 하려면 True로 설정
-        self.is_automatic_order = False
+        self.is_automatic_order = True
 
         # 자동 선정 종목 리스트 테이블 설정
         self.set_automated_stocks()
@@ -76,7 +78,7 @@ class MyWindow(QMainWindow, form_class):
 
             # 자동 주문 실행
             # 1100은 11시 00분을 의미합니다.
-            if self.is_automatic_order and int(automatic_order_time) >= 1100:
+            if self.is_automatic_order and int(automatic_order_time) >= 900:
                 self.is_automatic_order = False
                 self.automatic_order()
                 self.set_automated_stocks()
@@ -107,7 +109,7 @@ class MyWindow(QMainWindow, form_class):
             accountList = self.kiwoom.get_login_info("ACCNO").split(';')
             self.accountComboBox.addItems(accountList[0:cnt])
         except (KiwoomConnectError, ParameterTypeError, ParameterValueError) as e:
-            self.showDialog('Critical', e)
+            self.show_dialog('Critical', e)
 
     def send_order(self):
         """ 키움서버로 주문정보를 전송한다. """
@@ -120,11 +122,11 @@ class MyWindow(QMainWindow, form_class):
         hoga_type = hoga_type_table[self.hogaTypeComboBox.currentText()]
         qty = self.qtySpinBox.value()
         price = self.priceSpinBox.value()
-		
+
         try:
             self.kiwoom.Send_order("수동주문", "0101", account, order_type, code, qty, price, hoga_type, "")
         except (ParameterTypeError, KiwoomProcessingError) as e:
-            self.showDialog('Critical', e)
+            self.show_dialog('Critical', e)
 
     def inquiry_balance(self):
         """ 예수금상세현황과 계좌평가잔고내역을 요청후 테이블에 출력한다. """
@@ -146,7 +148,7 @@ class MyWindow(QMainWindow, form_class):
                 self.kiwoom.set_input_value("비밀번호", "0000")
                 self.kiwoom.comm_rq_data("계좌평가잔고내역요청", "opw00018", 2, "2")
         except (ParameterTypeError, ParameterValueError, KiwoomProcessingError) as e:
-            self.showDialog('Critical', e)
+            self.show_dialog('Critical', e)
 
         # accountEvaluationTable 테이블에 정보 출력
 
@@ -180,6 +182,17 @@ class MyWindow(QMainWindow, form_class):
         # inquiryTimer 재시작
         self.inquiryTimer.start(1000*10)
 
+    # 경고창
+    def show_dialog(self, grade, error):
+        grade_table = {'Information': 1, 'Warning': 2, 'Critical': 3, 'Question': 4}
+
+        dialog = QMessageBox()
+        dialog.setIcon(grade_table[grade])
+        dialog.setText(error.msg)
+        dialog.setWindowTitle(grade)
+        dialog.setStandardButtons(QMessageBox.Ok)
+        dialog.exec_()
+
     def set_automated_stocks(self):
         file_list = ["buy_list.txt", "sell_list.txt"]
         automated_stocks = []
@@ -188,12 +201,13 @@ class MyWindow(QMainWindow, form_class):
             for file in file_list:
                 # utf-8로 작성된 파일을
                 # cp949 환경에서 읽기위해서 encoding 지정
-                with open(file, 'rt', encoding='euc-kr') as f:
+                with open(file, 'rt', encoding='utf-8') as f:
                     stocks_list = f.readlines()
                     automated_stocks += stocks_list
         except Exception as e:
+            print(e)
             e.msg = "set_automated_stocks() 에러"
-            self.showDialog('Critical', e)
+            self.show_dialog('Critical', e)
             return
 
         # 테이블 행수 설정
@@ -228,8 +242,9 @@ class MyWindow(QMainWindow, form_class):
                     stocks_list = f.readlines()
                     automated_stocks += stocks_list
         except Exception as e:
-            e.msg = "automaticOrder() 에러"
-            self.showDialog('Critical', e)
+            print(e)
+            e.msg = "automatic_order() 에러"
+            self.show_dialog('Critical', e)
             return
 
         cnt = len(automated_stocks)
@@ -239,6 +254,7 @@ class MyWindow(QMainWindow, form_class):
         sell_result = []
 
         for i in range(cnt):
+            time.sleep(0.5)
             stocks = automated_stocks[i].split(';')
 
             code = stocks[1]
@@ -271,10 +287,10 @@ class MyWindow(QMainWindow, form_class):
                         sell_result += automated_stocks[i]
 
             except (ParameterTypeError, KiwoomProcessingError) as e:
-                self.showDialog('Critical', e)
+                self.show_dialog('Critical', e)
 
         # 잔고및 보유종목 디스플레이 갱신
-        self.inquiryBalance()
+        self.inquiry_balance()
 
         # 결과저장하기
         for file, result in zip(file_list, [buy_result, sell_result]):
