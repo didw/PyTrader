@@ -32,7 +32,6 @@ def get_sqlite(code):
 
 def convert_index_sqlite():
     con = sqlite3.connect("stock.db")
-    con2 = sqlite3.connect("stock2.db")
     code_list = con.execute("SELECT name from sqlite_master WHERE type='table'").fetchall()
     for code in code_list:
         print("convert %s" % code[0])
@@ -44,7 +43,7 @@ def convert_index_sqlite():
             data = pd.read_sql("SELECT * from '%s'" % code[0], con, index_col='일자')
         data.index.name = '일자'
         #data = data.loc[data.index > '20010101']
-        data.to_sql(code[0], con2, if_exists='replace')
+        data.to_sql(code[0], con, if_exists='replace')
 
 if __name__ == '__main__':
     convert_index_sqlite()

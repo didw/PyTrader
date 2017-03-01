@@ -31,7 +31,7 @@ class SimpleModel:
 
     def load_data(self, code, begin_date, end_date):
         con = sqlite3.connect('stock.db')
-        df = pd.read_sql("SELECT * from '%s'" % code, con, index_col='일자')
+        df = pd.read_sql("SELECT * from '%s'" % code, con, index_col='일자').sort_index()
         data = df.loc[df.index > str(begin_date)]
         data = data.loc[data.index < str(end_date)]
         data = data.reset_index()
@@ -48,8 +48,8 @@ class SimpleModel:
                 pass
                 print(e)
         data.loc[:, 'month'] = data.loc[:, '일자'].str[4:6]
-        data = data.drop(['체결강도'], axis=1)
-        for i in range(self.frame_len+self.predict_dist, len(data)):
+        data = data.drop(['일자', '체결강도'], axis=1)
+        for i in range(self.frame_len, len(data)-self.predict_dist):
             """
             for c in data.columns:
                 try:
@@ -60,8 +60,8 @@ class SimpleModel:
             #print("make data from %s to %s, %s" % (data['일자'][i-frame_len], data['일자'][i-1], data['일자'][i-frame_len-predict_dist]))
             #print(np.array(data.iloc[i-frame_len:i, :]))
             data_x.extend(np.array(data.iloc[i-self.frame_len:i, :]))
-            data_y.extend(data.loc[i-self.frame_len-self.predict_dist, ['현재가']])
-        np_x = np.array(data_x).reshape(-1, 24*30)
+            data_y.extend(data.loc[i+self.predict_dist, ['현재가']])
+        np_x = np.array(data_x).reshape(-1, 23*30)
         np_y = np.array(data_y)
         return np_x, np_y
 
@@ -77,6 +77,7 @@ class SimpleModel:
         print("Evaluate model %d_%d.pkl" % (self.frame_len, self.predict_dist))
         model_name = "simple_reg_model/%d_%d.pkl" % (self.frame_len, self.predict_dist)
         self.estimator = joblib.load(model_name)
+        print(X_test)
         pred = self.estimator.predict(X_test)
         res = 0
         score = 0
@@ -88,17 +89,93 @@ class SimpleModel:
         score = np.sqrt(score/len(pred))
         print("score: %f" % score)
         for idx in range(len(pred)):
-            buy_price = float(X_test[idx][1])
+            buy_price = float(X_test[idx][0])
             if pred[idx] > buy_price*1.1:
                 res += (int(Y_test[idx]) - buy_price*1.005)*(100000/buy_price)
                 print("buy: %6d, sell: %6d, earn: %6d" % (buy_price, int(Y_test[idx]), (int(Y_test[idx]) - buy_price*1.005)*(100000/buy_price)))
         print("result: %d" % res)
 
+    def load_current_data(self):
+        con = sqlite3.connect('stock.db')
+        code_list = con.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        X_test = []
+        code_list = list(map(lambda x: x[0], code_list))
+        first = True
+        for code in code_list:
+            df = pd.read_sql("SELECT * from '%s'" % code, con, index_col='일자').sort_index()
+            data = df.iloc[-30:,:]
+            data = data.reset_index()
+            for col in data.columns:
+                try:
+                    data.loc[:, col] = data.loc[:, col].str.replace('--', '-')
+                    data.loc[:, col] = data.loc[:, col].str.replace('+', '')
+                except AttributeError as e:
+                    pass
+                    print(e)
+            data.loc[:, 'month'] = data.loc[:, '일자'].str[4:6]
+            data = data.drop(['일자', '체결강도'], axis=1)
+            if len(data) < 30:
+                continue
+            X_test.extend(np.array(data))
+            print(np.shape(X_test))
+        X_test = np.array(X_test).reshape(-1, 23*30) 
+        return X_test, code_list
+
+    def make_buy_list(self, X_test, code_list):
+        BUY_UNIT = 500000
+        print("make buy_list")
+        model_name = "simple_reg_model/%d_%d.pkl" % (self.frame_len, self.predict_dist)
+        self.estimator = joblib.load(model_name)
+        pred = self.estimator.predict(X_test)
+        res = 0
+        score = 0
+        pred = np.array(pred).reshape(-1)
+
+        buy_item = ["매수", "", "시장가", 0, 0, "매수전"]  # 매수/매도, code, 시장가/현재가, qty, price, "주문전/주문완료"
+        with open("buy_list.txt", "wt", encoding='utf-8') as f_buy:
+            for idx in range(len(pred)):
+                buy_price = float(X_test[idx][0])
+                print("code: %s, cur: %d, predict: %d" % (code_list[idx], buy_price, pred[idx]))
+                if pred[idx] > buy_price*1.2:
+                    print("add to buy_list %d")
+                    buy_item[1] = code_list[idx]
+                    buy_item[3] = int(BUY_UNIT / buy_price)
+                    for item in buy_item:
+                        f_buy.write("%s;"%str(item))
+                    f_buy.write('\n')
+
+    def make_sell_list(self, X_test, code_list):
+        print("make sell_list")
+        model_name = "simple_reg_model/%d_%d.pkl" % (self.frame_len, self.predict_dist)
+        self.estimator = joblib.load(model_name)
+        pred = self.estimator.predict(X_test)
+        res = 0
+        score = 0
+        pred = np.array(pred).reshape(-1)
+
+        sell_item = ["매도", "", "시장가", 0, 0, "매도전"]  # 매수/매도, code, 시장가/현재가, qty, price, "주문전/주문완료"
+        with open("sell_list.txt", "wt", encoding='utf-8') as f_sell:
+            for idx in range(len(pred)):
+                buy_price = float(X_test[idx][0])
+                print("code: %s, cur: %d, predict: %d" % (code_list[idx], buy_price, pred[idx]))
+                if pred[idx] > buy_price*1.1:
+                    print("add to buy_list %d")
+                    buy_item[1] = code_list[idx]
+                    buy_item[3] = 0
+                    for item in buy_item:
+                        f_sell.write("%s;"%str(item))
+                    f_sell.write('\n')
+
 
 if __name__ == '__main__':
     sm = SimpleModel()
-    X_train, Y_train = sm.load_all_data(20100101, 20151231)
-    sm.train_model(X_train, Y_train)
+    #X_train, Y_train = sm.load_all_data(20100101, 20170228)
+    #sm.train_model(X_train, Y_train)
 
-    X_test, Y_test = sm.load_all_data(20160101, 20161231)
-    sm.evaluate_model(X_test, Y_test)
+    #X_test, Y_test = sm.load_all_data(20161101, 20170131)
+    #sm.evaluate_model(X_test, Y_test)
+
+    X_test, code_list = sm.load_current_data()
+    print("X_test: %d" % len(X_test))
+    print("code_list: %d" % len(code_list))
+    sm.make_buy_list(X_test, code_list)

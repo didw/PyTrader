@@ -25,7 +25,7 @@ class DailyData:
         today = datetime.date.today().strftime("%Y%m%d")
         #today = datetime.date(2011,9,1).strftime("%Y%m%d")
         print(today, len(self.kosdak_codes), len(self.kospi_codes))
-        for code in self.kospi_codes:
+        for code in self.kospi_codes[1200:]:
             print("get data of %s" % code)
             self.save_table(code, today)
         for code in self.kosdak_codes:
@@ -45,12 +45,13 @@ class DailyData:
             end_date = max(orig_data.index[0], orig_data.index[-1])
             data = data.loc[data.index > end_date]
             data = pd.concat([orig_data, data], axis=0)
-            data.index.name = '일자'
         except pd.io.sql.DatabaseError as e:
             print(e)
             pass
         finally:
-            data.to_sql(code, con, if_exists='replace')
+            data.index.name = '일자'
+            if len(data) != 0:
+                data.to_sql(code, con, if_exists='replace')
 
 
 if __name__ == '__main__':
