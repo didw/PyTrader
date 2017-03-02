@@ -233,14 +233,14 @@ class Kiwoom(QAxWidget):
 
             # 보유 종목 정보
             cnt = self.get_repeat_cnt(tr_code, request_name)
-            key_list = ["종목명", "보유수량", "매입가", "현재가", "평가손익", "수익률(%)"]
+            key_list = ["종목명", "보유수량", "매입가", "현재가", "평가손익", "수익률(%)", "종목번호"]
             for i in range(cnt):
                 stock = []
                 for key in key_list:
                     value = self.comm_get_data(tr_code, "", request_name, i, key)
                     if key.startswith("수익률"):
                         value = self.change_format(value, 2)
-                    elif key != "종목명":
+                    elif key != "종목명" and key != "종목번호":
                         value = self.change_format(value)
                     stock.append(value)
                 self.data_opw00018['stocks'].append(stock)

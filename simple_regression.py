@@ -147,6 +147,38 @@ class SimpleModel:
                         f_buy.write("%s;"%str(item))
                     f_buy.write('\n')
 
+    def load_data_in_account(self):
+        # load code list from account
+        with open('stocks_in_account.txt') as f_stocks:
+            for data in f_stocks.readlines():
+                print(data)
+
+        # load data in code_list
+        con = sqlite3.connect('stock.db')
+        code_list = con.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        X_test = []
+        code_list = list(map(lambda x: x[0], code_list))
+        first = True
+        for code in code_list:
+            df = pd.read_sql("SELECT * from '%s'" % code, con, index_col='일자').sort_index()
+            data = df.iloc[-30:,:]
+            data = data.reset_index()
+            for col in data.columns:
+                try:
+                    data.loc[:, col] = data.loc[:, col].str.replace('--', '-')
+                    data.loc[:, col] = data.loc[:, col].str.replace('+', '')
+                except AttributeError as e:
+                    pass
+                    print(e)
+            data.loc[:, 'month'] = data.loc[:, '일자'].str[4:6]
+            data = data.drop(['일자', '체결강도'], axis=1)
+            if len(data) < 30:
+                continue
+            X_test.extend(np.array(data))
+            print(np.shape(X_test))
+        X_test = np.array(X_test).reshape(-1, 23*30) 
+        return X_test, code_list
+
     def make_sell_list(self, X_test, code_list):
         print("make sell_list")
         model_name = "simple_reg_model/%d_%d.pkl" % (self.frame_len, self.predict_dist)
@@ -178,7 +210,8 @@ if __name__ == '__main__':
     #X_test, Y_test = sm.load_all_data(20161101, 20170131)
     #sm.evaluate_model(X_test, Y_test)
 
-    X_test, code_list = sm.load_current_data()
-    print("X_test: %d" % len(X_test))
-    print("code_list: %d" % len(code_list))
-    sm.make_buy_list(X_test, code_list)
+    #X_test, code_list = sm.load_current_data()
+    #print("X_test: %d" % len(X_test))
+    #print("code_list: %d" % len(code_list))
+    #sm.make_buy_list(X_test, code_list)
+    sm.make_sell_list()
