@@ -45,5 +45,9 @@ def convert_index_sqlite():
         #data = data.loc[data.index > '20010101']
         data.to_sql(code[0], con, if_exists='replace')
 
+def delete_table(table_name):
+    con = sqlite3.connect("stock.db")
+    con.execute("DROP TABLE '%s'" % table_name)
+
 if __name__ == '__main__':
-    convert_index_sqlite()
+    delete_table('000040')

@@ -125,7 +125,7 @@ class SimpleModel:
         return X_test, code_list
 
     def make_buy_list(self, X_test, code_list):
-        BUY_UNIT = 500000
+        BUY_UNIT = 300000
         print("make buy_list")
         model_name = "simple_reg_model/%d_%d.pkl" % (self.frame_len, self.predict_dist)
         self.estimator = joblib.load(model_name)
@@ -138,8 +138,8 @@ class SimpleModel:
         with open("buy_list.txt", "wt", encoding='utf-8') as f_buy:
             for idx in range(len(pred)):
                 buy_price = float(X_test[idx][0])
-                print("code: %s, cur: %d, predict: %d" % (code_list[idx], buy_price, pred[idx]))
-                if pred[idx] > buy_price*1.2:
+                print("[BUY?] code: %s, cur: %d, predict: %d" % (code_list[idx], buy_price, pred[idx]))
+                if pred[idx] > buy_price*1.3:
                     print("add to buy_list %d")
                     buy_item[1] = code_list[idx]
                     buy_item[3] = int(BUY_UNIT / buy_price)
@@ -149,18 +149,18 @@ class SimpleModel:
 
     def load_data_in_account(self):
         # load code list from account
-        with open('stocks_in_account.txt') as f_stocks:
-            for data in f_stocks.readlines():
-                print(data)
+        code_list = []
+        with open('stocks_in_account.txt', encoding='utf-8') as f_stocks:
+            for line in f_stocks.readlines():
+                data = line.split(',')
+                code_list.append([data[6].replace('A', ''), data[1], data[0]])
 
         # load data in code_list
         con = sqlite3.connect('stock.db')
-        code_list = con.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
         X_test = []
-        code_list = list(map(lambda x: x[0], code_list))
         first = True
         for code in code_list:
-            df = pd.read_sql("SELECT * from '%s'" % code, con, index_col='일자').sort_index()
+            df = pd.read_sql("SELECT * from '%s'" % code[0], con, index_col='일자').sort_index()
             data = df.iloc[-30:,:]
             data = data.reset_index()
             for col in data.columns:
@@ -191,27 +191,25 @@ class SimpleModel:
         sell_item = ["매도", "", "시장가", 0, 0, "매도전"]  # 매수/매도, code, 시장가/현재가, qty, price, "주문전/주문완료"
         with open("sell_list.txt", "wt", encoding='utf-8') as f_sell:
             for idx in range(len(pred)):
-                buy_price = float(X_test[idx][0])
-                print("code: %s, cur: %d, predict: %d" % (code_list[idx], buy_price, pred[idx]))
-                if pred[idx] > buy_price*1.1:
-                    print("add to buy_list %d")
-                    buy_item[1] = code_list[idx]
-                    buy_item[3] = 0
-                    for item in buy_item:
+                current_price = float(X_test[idx][0])
+                print("[SELL?] code: %s, cur: %d, predict: %d" % (code_list[idx], current_price, pred[idx]))
+                if pred[idx] < current_price:
+                    print("add to sell_list %d")
+                    sell_item[1] = code_list[idx][0]
+                    sell_item[3] = code_list[idx][1]
+                    for item in sell_item:
                         f_sell.write("%s;"%str(item))
                     f_sell.write('\n')
 
 
 if __name__ == '__main__':
     sm = SimpleModel()
-    #X_train, Y_train = sm.load_all_data(20100101, 20170228)
+    #X_train, Y_train, _ = sm.load_all_data(20160101, 20161231)
     #sm.train_model(X_train, Y_train)
+    #X_test, Y_test, Data = sm.load_all_data(20170101, 20170231)
+    #sm.evaluate_model(X_test, Y_test, Data)
 
-    #X_test, Y_test = sm.load_all_data(20161101, 20170131)
-    #sm.evaluate_model(X_test, Y_test)
-
-    #X_test, code_list = sm.load_current_data()
-    #print("X_test: %d" % len(X_test))
-    #print("code_list: %d" % len(code_list))
-    #sm.make_buy_list(X_test, code_list)
-    sm.make_sell_list()
+    X_data, code_list = sm.load_current_data()
+    sm.make_buy_list(X_data, code_list)
+    X_data, code_list = sm.load_data_in_account()
+    sm.make_sell_list(X_data, code_list)
