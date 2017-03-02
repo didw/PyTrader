@@ -17,17 +17,20 @@ class SimpleModel:
         first = True
         for code in code_list:
             data = self.load_data(code[0], begin_date, end_date)
+            data = data.dropna()
             X, Y = self.make_x_y(data)
             if first:
                 X_data = list(X)
                 Y_data = list(Y)
+                DATA = data.values.tolist()
                 first = False
                 print(np.shape(X_data), np.shape(Y_data))
             else:
                 X_data.extend(X)
                 Y_data.extend(Y)
+                DATA.extend(data.values.tolist())
                 print(np.shape(X_data), np.shape(Y_data))
-        return np.array(X_data), np.array(Y_data)
+        return np.array(X_data), np.array(Y_data), np.array(DATA)
 
     def load_data(self, code, begin_date, end_date):
         con = sqlite3.connect('stock.db')
@@ -73,11 +76,10 @@ class SimpleModel:
         print("finish training model")
         joblib.dump(self.estimator, model_name)
 
-    def evaluate_model(self, X_test, Y_test):
+    def evaluate_model(self, X_test, Y_test, orig_data):
         print("Evaluate model %d_%d.pkl" % (self.frame_len, self.predict_dist))
         model_name = "simple_reg_model/%d_%d.pkl" % (self.frame_len, self.predict_dist)
         self.estimator = joblib.load(model_name)
-        print(X_test)
         pred = self.estimator.predict(X_test)
         res = 0
         score = 0
@@ -90,6 +92,7 @@ class SimpleModel:
         print("score: %f" % score)
         for idx in range(len(pred)):
             buy_price = float(X_test[idx][0])
+            date = int(orig_data[idx][1])
             if pred[idx] > buy_price*1.1:
                 res += (int(Y_test[idx]) - buy_price*1.005)*(100000/buy_price)
                 print("buy: %6d, sell: %6d, earn: %6d" % (buy_price, int(Y_test[idx]), (int(Y_test[idx]) - buy_price*1.005)*(100000/buy_price)))

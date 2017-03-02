@@ -52,7 +52,7 @@ class Kiwoom(QAxWidget):
         self.data_opw00001 = 0
 
         # 보유종목 정보
-        self.data_opw00018 = {'accountEvaluation': [], 'stocks': []}
+        self.data_opw00018 = {'account_evaluation': [], 'stocks': []}
 
         # 주가상세정보
         self.data_opt10081 = [] * 15
@@ -850,7 +850,8 @@ class Kiwoom(QAxWidget):
             d = int(data)
             format_data = '{:-,d}'.format(d)
         elif percent == 1:
-            f = int(data) / 100
+            f = float(data)
+            f -= 100
             format_data = '{:-,.2f}'.format(f)
         elif percent == 2:
             f = float(data)
@@ -860,7 +861,7 @@ class Kiwoom(QAxWidget):
     def opw_data_reset(self):
         """ 잔고 및 보유종목 데이터 초기화 """
         self.data_opw00001 = 0
-        self.data_opw00018 = {'accountEvaluation': [], 'stocks': []}
+        self.data_opw00018 = {'account_evaluation': [], 'stocks': []}
 
 
 class ParameterTypeError(Exception):
@@ -1275,7 +1276,7 @@ def test_to_get_account():
         kiwoom.set_input_value("비밀번호", "0000")
         kiwoom.comm_rq_data("계좌평가잔고내역요청", "opw00018", 2, "2")
 
-    print(kiwoom.data_opw00018['accountEvaluation'])
+    print(kiwoom.data_opw00018['account_evaluation'])
     print(kiwoom.data_opw00018['stocks'])
 
 

@@ -171,11 +171,11 @@ class MyWindow(QMainWindow, form_class):
             for i in range(item_count):
                 row = self.kiwoom.data_opw00018['stocks'][i]
                 for j in range(len(row)):
-                    f.write('%s,'%row[j])
+                    f_stock.write('%s,'%row[j])
                     item = QTableWidgetItem(row[j])
                     item.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
                     self.stocksTable.setItem(i, j, item)
-                f.write('\n')
+                f_stock.write('\n')
 
         self.stocksTable.resizeRowsToContents()
 
