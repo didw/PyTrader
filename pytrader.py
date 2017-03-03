@@ -37,6 +37,11 @@ class MyWindow(QMainWindow, form_class):
         self.timer.start(1000)
         self.timer.timeout.connect(self.timeout)
 
+        # 자동 주문
+        self.timer_stock = QTimer(self)
+        self.timer_stock.start(1000*60)
+        self.timer_stock.timeout.connect(self.timeout)
+
         # 잔고 및 보유종목 조회 타이머
         self.inquiryTimer = QTimer(self)
         self.inquiryTimer.start(1000*10)
@@ -63,7 +68,6 @@ class MyWindow(QMainWindow, form_class):
         # 메인 타이머
         if id(sender) == id(self.timer):
             current_time = QTime.currentTime().toString("hh:mm:ss")
-            automatic_order_time = QTime.currentTime().toString("hhmm")
 
             # 상태바 설정
             state = ""
@@ -76,17 +80,19 @@ class MyWindow(QMainWindow, form_class):
 
             self.statusbar.showMessage("현재시간: " + current_time + " | " + state)
 
-            # 자동 주문 실행
-            # 1100은 11시 00분을 의미합니다.
-            if self.is_automatic_order and int(automatic_order_time) >= 900:
-                self.is_automatic_order = False
-                self.automatic_order()
-                self.set_automated_stocks()
-
             # log
             if self.kiwoom.msg:
                 self.logTextEdit.append(self.kiwoom.msg)
                 self.kiwoom.msg = ""
+
+        elif id(sender) == id(self.timer_stock):
+            automatic_order_time = QTime.currentTime().toString("hhmm")
+            # 자동 주문 실행
+            # 1100은 11시 00분을 의미합니다.
+            if self.is_automatic_order and int(automatic_order_time) >= 900:
+                self.is_automatic_order = True
+                self.automatic_order()
+                self.set_automated_stocks()
 
         # 실시간 조회 타이머
         else:
@@ -290,6 +296,11 @@ class MyWindow(QMainWindow, form_class):
                     # 주문 미접수시
                     else:
                         sell_result += automated_stocks[i]
+                elif stocks[5].rstrip() == '매수완료':
+                    buy_result += automated_stocks[i]
+                elif stocks[5].rstrip() == '매도완료':
+                    sell_result += automated_stocks[i]
+
 
             except (ParameterTypeError, KiwoomProcessingError) as e:
                 self.show_dialog('Critical', e)

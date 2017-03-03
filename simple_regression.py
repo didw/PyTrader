@@ -1,9 +1,32 @@
+# -*- encoding: utf-8 -*-
 import pandas as pd
 import numpy as np
 import sqlite3
 from sklearn.ensemble.forest import RandomForestRegressor
 from sklearn.externals import joblib
+from keras.models import Sequential
+from keras.layers import Dense, Dropout, normalization
+from keras.wrappers.scikit_learn import KerasRegressor
+from keras import backend as K
+from sklearn.preprocessing import StandardScaler
+import tensorflow as tf
 import os
+
+MODEL_TYPE = 'keras'
+def baseline_model():
+    # create model
+    model = Sequential()
+    #model.add(Dense(128, input_dim=174, init='he_normal', activation='relu'))
+    model.add(Dense(128, input_dim=690, init='he_normal', activation='relu'))
+    model.add(normalization.BatchNormalization(epsilon=0.001, mode=0, axis=-1, momentum=0.99, weights=None, beta_init='zero', gamma_init='one', gamma_regularizer=None, beta_regularizer=None))
+
+    #model.add(Dropout(0.1))
+    model.add(Dense(128, init='he_normal'))
+    model.add(Dense(1, init='he_normal'))
+    # Compile model
+    model.compile(loss='mean_squared_error', optimizer='adam')
+    return model
+
 
 class SimpleModel:
     def __init__(self):
@@ -14,22 +37,33 @@ class SimpleModel:
     def load_all_data(self, begin_date, end_date):
         con = sqlite3.connect('stock.db')
         code_list = con.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
-        first = True
+        X_data_list, Y_data_list, DATA_list = [0]*10, [0]*10, [0]*10
+        idx = 0
+        split = int(len(code_list) / 9)
         for code in code_list:
             data = self.load_data(code[0], begin_date, end_date)
             data = data.dropna()
             X, Y = self.make_x_y(data)
-            if first:
-                X_data = list(X)
-                Y_data = list(Y)
-                DATA = data.values.tolist()
-                first = False
-                print(np.shape(X_data), np.shape(Y_data))
+            print(idx, split, len(code_list))
+            if idx%split == 0:
+                X_data_list[int(idx/split)] = list(X)
+                Y_data_list[int(idx/split)] = list(Y)
+                DATA_list[int(idx/split)] = data.values.tolist()
             else:
-                X_data.extend(X)
-                Y_data.extend(Y)
-                DATA.extend(data.values.tolist())
-                print(np.shape(X_data), np.shape(Y_data))
+                X_data_list[int(idx/split)].extend(X)
+                Y_data_list[int(idx/split)].extend(Y)
+                DATA_list[int(idx/split)].extend(data.values.tolist())
+            print(idx, np.shape(X_data_list[int(idx/split)]), np.shape(Y_data_list[int(idx/split)]))
+            idx += 1
+        for i in range(10):
+            if i == 0:
+                X_data = X_data_list[i]
+                Y_data = Y_data_list[i]
+                DATA = DATA_list[i]
+            else:
+                X_data.extend(X_data_list[i])
+                Y_data.extend(Y_data_list[i])
+                DATA.extend(DATA_list[i])
         return np.array(X_data), np.array(Y_data), np.array(DATA)
 
     def load_data(self, code, begin_date, end_date):
@@ -76,10 +110,33 @@ class SimpleModel:
         print("finish training model")
         joblib.dump(self.estimator, model_name)
 
+    def train_model_keras(self, X_train, Y_train):
+        #Tensorflow GPU optimization
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        sess = tf.Session(config=config)
+        K.set_session(sess)
+
+        print("training model %d_%d.pkl" % (self.frame_len, self.predict_dist))
+        model_name = "reg_keras/%d_%d.pkl" % (self.frame_len, self.predict_dist)
+        self.estimators = KerasRegressor(build_fn=baseline_model, nb_epoch=20, batch_size=64, verbose=0)
+        self.estimators.fit(X_train, Y_train)
+        self.estimator.fit(X_train, Y_train)
+        print("finish training model")
+        # saving model
+        json_model = estimators.model.to_json()
+        open(model_name.replace('h5', 'json'), 'w').write(json_model)
+        self.estimators.model.save_weights(model_name, overwrite=True)
+
     def evaluate_model(self, X_test, Y_test, orig_data):
         print("Evaluate model %d_%d.pkl" % (self.frame_len, self.predict_dist))
-        model_name = "simple_reg_model/%d_%d.pkl" % (self.frame_len, self.predict_dist)
-        self.estimator = joblib.load(model_name)
+        if MODEL_TYPE == 'random_forest':
+            model_name = "simple_reg_model/%d_%d.pkl" % (self.frame_len, self.predict_dist)
+            self.estimator = joblib.load(model_name)
+        elif MODEL_TYPE == 'keras':
+            model_name = "reg_keras/%d_%d.h5" % (self.frame_len, self.predict_dist)
+            self.estimators = model_from_json(open(model_name.replace('h5', 'json')).read())
+            self.estimators.load_weights(model_name)
         pred = self.estimator.predict(X_test)
         res = 0
         score = 0
@@ -91,11 +148,11 @@ class SimpleModel:
         score = np.sqrt(score/len(pred))
         print("score: %f" % score)
         for idx in range(len(pred)):
-            buy_price = float(X_test[idx][0])
-            date = int(orig_data[idx][1])
-            if pred[idx] > buy_price*1.1:
-                res += (int(Y_test[idx]) - buy_price*1.005)*(100000/buy_price)
-                print("buy: %6d, sell: %6d, earn: %6d" % (buy_price, int(Y_test[idx]), (int(Y_test[idx]) - buy_price*1.005)*(100000/buy_price)))
+            buy_price = float(X_test[idx][23*29])
+            date = int(orig_data[idx][0])
+            if pred[idx] > buy_price*1.2:
+                res += (int(Y_test[idx]) - buy_price*1.005)*(100000/buy_price+1)
+                print("[%s] buy: %6d, sell: %6d, earn: %6d" % (str(date), buy_price, int(Y_test[idx]), (int(Y_test[idx]) - buy_price*1.005)*(100000/buy_price)))
         print("result: %d" % res)
 
     def load_current_data(self):
@@ -137,7 +194,7 @@ class SimpleModel:
         buy_item = ["매수", "", "시장가", 0, 0, "매수전"]  # 매수/매도, code, 시장가/현재가, qty, price, "주문전/주문완료"
         with open("buy_list.txt", "wt", encoding='utf-8') as f_buy:
             for idx in range(len(pred)):
-                buy_price = float(X_test[idx][0])
+                buy_price = float(X_test[idx][23*29])
                 print("[BUY?] code: %s, cur: %d, predict: %d" % (code_list[idx], buy_price, pred[idx]))
                 if pred[idx] > buy_price*1.3:
                     print("add to buy_list %d")
@@ -191,7 +248,7 @@ class SimpleModel:
         sell_item = ["매도", "", "시장가", 0, 0, "매도전"]  # 매수/매도, code, 시장가/현재가, qty, price, "주문전/주문완료"
         with open("sell_list.txt", "wt", encoding='utf-8') as f_sell:
             for idx in range(len(pred)):
-                current_price = float(X_test[idx][0])
+                current_price = float(X_test[idx][23*29])
                 print("[SELL?] code: %s, cur: %d, predict: %d" % (code_list[idx], current_price, pred[idx]))
                 if pred[idx] < current_price:
                     print("add to sell_list %d")
@@ -204,12 +261,12 @@ class SimpleModel:
 
 if __name__ == '__main__':
     sm = SimpleModel()
-    #X_train, Y_train, _ = sm.load_all_data(20160101, 20161231)
-    #sm.train_model(X_train, Y_train)
-    #X_test, Y_test, Data = sm.load_all_data(20170101, 20170231)
-    #sm.evaluate_model(X_test, Y_test, Data)
+    X_train, Y_train, _ = sm.load_all_data(20110101, 20151231)
+    sm.train_model_keras(X_train, Y_train)
+    X_test, Y_test, Data = sm.load_all_data(20160101, 20170101)
+    sm.evaluate_model(X_test, Y_test, Data)
 
-    X_data, code_list = sm.load_current_data()
-    sm.make_buy_list(X_data, code_list)
-    X_data, code_list = sm.load_data_in_account()
-    sm.make_sell_list(X_data, code_list)
+    #X_data, code_list = sm.load_current_data()
+    #sm.make_buy_list(X_data, code_list)
+    #X_data, code_list = sm.load_data_in_account()
+    #sm.make_sell_list(X_data, code_list)
