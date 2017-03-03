@@ -149,7 +149,7 @@ class SimpleModel:
         for idx in range(len(pred)):
             buy_price = float(X_test[idx][23*29])
             date = int(orig_data[idx][0])
-            if pred[idx] > buy_price*1.2:
+            if pred[idx] > buy_price*1.1:
                 res += (int(Y_test[idx]) - buy_price*1.005)*(100000/buy_price+1)
                 print("[%s] buy: %6d, sell: %6d, earn: %6d" % (str(date), buy_price, int(Y_test[idx]), (int(Y_test[idx]) - buy_price*1.005)*(100000/buy_price)))
         print("result: %d" % res)
@@ -262,7 +262,7 @@ if __name__ == '__main__':
     sm = SimpleModel()
     X_train, Y_train, _ = sm.load_all_data(20110101, 20151231)
     sm.train_model_keras(X_train, Y_train)
-    X_test, Y_test, Data = sm.load_all_data(20160101, 20170101)
+    X_test, Y_test, Data = sm.load_all_data(20160101, 20170228)
     sm.evaluate_model(X_test, Y_test, Data)
 
     #X_data, code_list = sm.load_current_data()
