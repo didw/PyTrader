@@ -119,14 +119,13 @@ class SimpleModel:
 
         print("training model %d_%d.pkl" % (self.frame_len, self.predict_dist))
         model_name = "reg_keras/%d_%d.pkl" % (self.frame_len, self.predict_dist)
-        self.estimators = KerasRegressor(build_fn=baseline_model, nb_epoch=20, batch_size=64, verbose=0)
-        self.estimators.fit(X_train, Y_train)
+        self.estimator = KerasRegressor(build_fn=baseline_model, nb_epoch=20, batch_size=64, verbose=0)
         self.estimator.fit(X_train, Y_train)
         print("finish training model")
         # saving model
-        json_model = estimators.model.to_json()
+        json_model = estimator.model.to_json()
         open(model_name.replace('h5', 'json'), 'w').write(json_model)
-        self.estimators.model.save_weights(model_name, overwrite=True)
+        self.estimator.model.save_weights(model_name, overwrite=True)
 
     def evaluate_model(self, X_test, Y_test, orig_data):
         print("Evaluate model %d_%d.pkl" % (self.frame_len, self.predict_dist))
@@ -135,8 +134,8 @@ class SimpleModel:
             self.estimator = joblib.load(model_name)
         elif MODEL_TYPE == 'keras':
             model_name = "reg_keras/%d_%d.h5" % (self.frame_len, self.predict_dist)
-            self.estimators = model_from_json(open(model_name.replace('h5', 'json')).read())
-            self.estimators.load_weights(model_name)
+            self.estimator = model_from_json(open(model_name.replace('h5', 'json')).read())
+            self.estimator.load_weights(model_name)
         pred = self.estimator.predict(X_test)
         res = 0
         score = 0
