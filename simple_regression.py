@@ -119,11 +119,11 @@ class SimpleModel:
 
         print("training model %d_%d.pkl" % (self.frame_len, self.predict_dist))
         model_name = "reg_keras/%d_%d.pkl" % (self.frame_len, self.predict_dist)
-        self.estimator = KerasRegressor(build_fn=baseline_model, nb_epoch=20, batch_size=64, verbose=0)
+        self.estimator = KerasRegressor(build_fn=baseline_model, nb_epoch=100, batch_size=64, verbose=0)
         self.estimator.fit(X_train, Y_train)
         print("finish training model")
         # saving model
-        json_model = estimator.model.to_json()
+        json_model = self.estimator.model.to_json()
         open(model_name.replace('h5', 'json'), 'w').write(json_model)
         self.estimator.model.save_weights(model_name, overwrite=True)
 
@@ -183,8 +183,13 @@ class SimpleModel:
     def make_buy_list(self, X_test, code_list):
         BUY_UNIT = 300000
         print("make buy_list")
-        model_name = "simple_reg_model/%d_%d.pkl" % (self.frame_len, self.predict_dist)
-        self.estimator = joblib.load(model_name)
+        if MODEL_TYPE == 'random_forest':
+            model_name = "simple_reg_model/%d_%d.pkl" % (self.frame_len, self.predict_dist)
+            self.estimator = joblib.load(model_name)
+        elif MODEL_TYPE == 'keras':
+            model_name = "reg_keras/%d_%d.h5" % (self.frame_len, self.predict_dist)
+            self.estimator = model_from_json(open(model_name.replace('h5', 'json')).read())
+            self.estimator.load_weights(model_name)
         pred = self.estimator.predict(X_test)
         res = 0
         score = 0
@@ -237,8 +242,13 @@ class SimpleModel:
 
     def make_sell_list(self, X_test, code_list):
         print("make sell_list")
-        model_name = "simple_reg_model/%d_%d.pkl" % (self.frame_len, self.predict_dist)
-        self.estimator = joblib.load(model_name)
+        if MODEL_TYPE == 'random_forest':
+            model_name = "simple_reg_model/%d_%d.pkl" % (self.frame_len, self.predict_dist)
+            self.estimator = joblib.load(model_name)
+        elif MODEL_TYPE == 'keras':
+            model_name = "reg_keras/%d_%d.h5" % (self.frame_len, self.predict_dist)
+            self.estimator = model_from_json(open(model_name.replace('h5', 'json')).read())
+            self.estimator.load_weights(model_name)
         pred = self.estimator.predict(X_test)
         res = 0
         score = 0
