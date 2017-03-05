@@ -30,5 +30,24 @@ def get_sqlite(code):
     data = data.loc[data.index > '20170102']
     data.to_sql(code, con, if_exists='replace')
 
+def convert_index_sqlite():
+    con = sqlite3.connect("stock.db")
+    code_list = con.execute("SELECT name from sqlite_master WHERE type='table'").fetchall()
+    for code in code_list:
+        print("convert %s" % code[0])
+        if '(' in code[0]:
+            continue
+        try:
+            data = pd.read_sql("SELECT * from '%s'" % code[0], con, index_col='index')
+        except:
+            data = pd.read_sql("SELECT * from '%s'" % code[0], con, index_col='일자')
+        data.index.name = '일자'
+        #data = data.loc[data.index > '20010101']
+        data.to_sql(code[0], con, if_exists='replace')
+
+def delete_table(table_name):
+    con = sqlite3.connect("stock.db")
+    con.execute("DROP TABLE '%s'" % table_name)
+
 if __name__ == '__main__':
-    get_sqlite('000300')
+    delete_table('000040')
