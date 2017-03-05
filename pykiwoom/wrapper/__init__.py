@@ -14,11 +14,11 @@ class KiwoomWrapper:
         self.kiwoom = kiwoom
 
     def get_data_opt10081(self, code, date='20161231'):
-        con = sqlite3.connect("stock.db")
+        con = sqlite3.connect("../data/stock.db")
         try:
-            data = pd.read_sql("SELECT * from '%s'" % code, con, index_col='index')
-            start = max(data.index[0], data.index[-1])
-        except pd.io.sql.DatabaseError as e:
+            data = pd.read_sql("SELECT * from '%s'" % code, con, index_col='일자').sort_index()
+            start = data.index[-2]
+        except (pd.io.sql.DatabaseError, IndexError)  as e:
             start = "20010101"
         print("get 81 data from %s" % start)
         self.kiwoom.start_date = datetime.strptime(start, "%Y%m%d")
@@ -37,10 +37,10 @@ class KiwoomWrapper:
         return self.kiwoom.data_opt10081.loc[:, ['현재가', '거래량', '거래대금', '시가', '고가', '저가']]
 
     def get_data_opt10086(self, code, date):
-        con = sqlite3.connect("stock.db")
+        con = sqlite3.connect("../data/stock.db")
         try:
-            data = pd.read_sql("SELECT * from '%s'" % code, con, index_col='index')
-            start = max(data.index[0], data.index[-1])
+            data = pd.read_sql("SELECT * from '%s'" % code, con, index_col='일자').sort_index()
+            start = data.index[-2]
         except pd.io.sql.DatabaseError as e:
             start = "20010101"
         print("get 86 data from %s" % start)

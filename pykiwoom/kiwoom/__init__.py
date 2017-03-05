@@ -52,7 +52,7 @@ class Kiwoom(QAxWidget):
         self.data_opw00001 = 0
 
         # 보유종목 정보
-        self.data_opw00018 = {'accountEvaluation': [], 'stocks': []}
+        self.data_opw00018 = {'account_evaluation': [], 'stocks': []}
 
         # 주가상세정보
         self.data_opt10081 = [] * 15
@@ -185,11 +185,12 @@ class Kiwoom(QAxWidget):
 
         if request_name == "주식일봉차트조회요청":
             data = self.get_comm_data_ex(tr_code, "주식일봉차트조회")
-            self.data_opt10081.extend(data)
-            date = data[0][4]
-            dt = datetime.strptime(date, "%Y%m%d")
-            if dt <= self.start_date:
-                self.inquiry = 0
+            if data is not None:
+                self.data_opt10081.extend(data)
+                date = data[0][4]
+                dt = datetime.strptime(date, "%Y%m%d")
+                if dt <= self.start_date:
+                    self.inquiry = 0
             if inquiry == "0" or self.inquiry == 0:
                 col_name = ['종목코드', '현재가', '거래량', '거래대금', '일자', '시가', '고가', '저가',
                             '수정주가구분', '수정비율', '대업종구분', '소업종구분', '종목정보', '수정주가이벤트', '전일종가']
@@ -199,10 +200,10 @@ class Kiwoom(QAxWidget):
             data = self.get_comm_data_ex(tr_code, "일별주가요청")
             if data is not None:
                 self.data_opt10086.extend(data)
-            date = data[0][0]
-            dt = datetime.strptime(date, "%Y%m%d")
-            if dt <= self.start_date:
-                self.inquiry = 0
+                date = data[0][0]
+                dt = datetime.strptime(date, "%Y%m%d")
+                if dt <= self.start_date:
+                    self.inquiry = 0
             if inquiry == "0" or self.inquiry == 0:
                 col_name = ['일자', '시가', '고가', '저가', '종가', '전일비', '등락률', '거래량',
                             '금액(백만)', '신용비', '개인', '기관', '외인수량', '외국계', '프로그램',
@@ -232,14 +233,14 @@ class Kiwoom(QAxWidget):
 
             # 보유 종목 정보
             cnt = self.get_repeat_cnt(tr_code, request_name)
-            key_list = ["종목명", "보유수량", "매입가", "현재가", "평가손익", "수익률(%)"]
+            key_list = ["종목명", "보유수량", "매입가", "현재가", "평가손익", "수익률(%)", "종목번호"]
             for i in range(cnt):
                 stock = []
                 for key in key_list:
                     value = self.comm_get_data(tr_code, "", request_name, i, key)
                     if key.startswith("수익률"):
                         value = self.change_format(value, 2)
-                    elif key != "종목명":
+                    elif key != "종목명" and key != "종목번호":
                         value = self.change_format(value)
                     stock.append(value)
                 self.data_opw00018['stocks'].append(stock)
@@ -849,7 +850,8 @@ class Kiwoom(QAxWidget):
             d = int(data)
             format_data = '{:-,d}'.format(d)
         elif percent == 1:
-            f = int(data) / 100
+            f = float(data)
+            f -= 100
             format_data = '{:-,.2f}'.format(f)
         elif percent == 2:
             f = float(data)
@@ -859,7 +861,7 @@ class Kiwoom(QAxWidget):
     def opw_data_reset(self):
         """ 잔고 및 보유종목 데이터 초기화 """
         self.data_opw00001 = 0
-        self.data_opw00018 = {'accountEvaluation': [], 'stocks': []}
+        self.data_opw00018 = {'account_evaluation': [], 'stocks': []}
 
 
 class ParameterTypeError(Exception):
@@ -1274,7 +1276,7 @@ def test_to_get_account():
         kiwoom.set_input_value("비밀번호", "0000")
         kiwoom.comm_rq_data("계좌평가잔고내역요청", "opw00018", 2, "2")
 
-    print(kiwoom.data_opw00018['accountEvaluation'])
+    print(kiwoom.data_opw00018['account_evaluation'])
     print(kiwoom.data_opw00018['stocks'])
 
 
