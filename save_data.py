@@ -16,6 +16,8 @@ class DailyData:
         self.kiwoom.comm_connect()
         self.wrapper = KiwoomWrapper(self.kiwoom)
         self.get_code_list()
+        print(self.kospi_codes)
+        print(self.kosdak_codes)
 
     def get_code_list(self):
         self.kospi_codes = self.kiwoom.get_codelist_by_market(MARKET_KOSPI)
@@ -25,10 +27,14 @@ class DailyData:
         today = datetime.date.today().strftime("%Y%m%d")
         #today = datetime.date(2011,9,1).strftime("%Y%m%d")
         print(today, len(self.kosdak_codes), len(self.kospi_codes))
-        for code in self.kospi_codes:
+        for code in self.kosdak_codes:
+            if code == '':
+                continue
             print("get data of %s" % code)
             self.save_table(code, today)
-        for code in self.kosdak_codes:
+        for code in self.kospi_codes:
+            if code == '':
+                continue
             print("get data of %s" % code)
             self.save_table(code, today)
 
@@ -46,7 +52,7 @@ class DailyData:
             orig_data = orig_data.loc[orig_data.index < end_date]
             data = data.loc[data.index >= end_date]
             data = pd.concat([orig_data, data], axis=0)
-        except pd.io.sql.DatabaseError as e:
+        except (pd.io.sql.DatabaseError, IndexError) as e:
             print(e)
             pass
         finally:
