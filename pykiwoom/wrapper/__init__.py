@@ -41,7 +41,7 @@ class KiwoomWrapper:
         try:
             data = pd.read_sql("SELECT * from '%s'" % code, con, index_col='일자').sort_index()
             start = data.index[-2]
-        except pd.io.sql.DatabaseError as e:
+        except (pd.io.sql.DatabaseError, IndexError) as e:
             start = "20010101"
         print("get 86 data from %s" % start)
         self.kiwoom.start_date = datetime.strptime(start, "%Y%m%d")

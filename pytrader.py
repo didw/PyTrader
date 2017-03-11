@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """
 QtDesigner로 만든 UI와 해당 UI의 위젯에서 발생하는 이벤트를 컨트롤하는 클래스
 
@@ -59,6 +58,7 @@ class MyWindow(QMainWindow, form_class):
 
         # 자동 선정 종목 리스트 테이블 설정
         self.set_automated_stocks()
+        self.inquiry_balance()
 
     def timeout(self):
         """ 타임아웃 이벤트가 발생하면 호출되는 메서드 """
@@ -90,7 +90,7 @@ class MyWindow(QMainWindow, form_class):
             automatic_order_time = QTime.currentTime().toString("hhmm")
             # 자동 주문 실행
             # 1100은 11시 00분을 의미합니다.
-            if self.is_automatic_order and int(automatic_order_time) >= 900:
+            if self.is_automatic_order and int(automatic_order_time) >= 900 and int(automatic_order_time) <= 1530:
                 self.is_automatic_order = True
                 self.automatic_order()
                 self.set_automated_stocks()
@@ -213,7 +213,7 @@ class MyWindow(QMainWindow, form_class):
             for file in file_list:
                 # utf-8로 작성된 파일을
                 # cp949 환경에서 읽기위해서 encoding 지정
-                with open(file, 'rt', encoding='utf-8') as f:
+                with open(file, 'rt') as f:
                     stocks_list = f.readlines()
                     automated_stocks += stocks_list
         except Exception as e:
@@ -250,7 +250,7 @@ class MyWindow(QMainWindow, form_class):
             for file in file_list:
                 # utf-8로 작성된 파일을
                 # cp949 환경에서 읽기위해서 encoding 지정
-                with open(file, 'rt', encoding='utf-8') as f:
+                with open(file, 'rt') as f:
                     stocks_list = f.readlines()
                     automated_stocks += stocks_list
         except Exception as e:
@@ -311,7 +311,7 @@ class MyWindow(QMainWindow, form_class):
 
         # 결과저장하기
         for file, result in zip(file_list, [buy_result, sell_result]):
-            with open(file, 'wt', encoding='utf-8') as f:
+            with open(file, 'wt') as f:
                 for data in result:
                     f.write(data)
 
