@@ -49,5 +49,12 @@ def delete_table(table_name):
     con = sqlite3.connect("stock.db")
     con.execute("DROP TABLE '%s'" % table_name)
 
+def print_table_columns():
+    con = sqlite3.connect("../data/stock.db")
+    code_list = con.execute("SELECT name from sqlite_master WHERE type='table'").fetchall()
+    code = code_list[0][0]
+    data = pd.read_sql("SELECT * from '%s'" % code, con, index_col='일자')
+    print(data.columns)
+
 if __name__ == '__main__':
-    delete_table('000040')
+    print_table_columns()
