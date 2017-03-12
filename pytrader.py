@@ -39,7 +39,7 @@ class MyWindow(QMainWindow, form_class):
 
         # 자동 주문
         self.timer_stock = QTimer(self)
-        self.timer_stock.start(1000*60)
+        self.timer_stock.start(1000*200)
         self.timer_stock.timeout.connect(self.timeout)
 
         # 잔고 및 보유종목 조회 타이머
@@ -90,6 +90,7 @@ class MyWindow(QMainWindow, form_class):
             automatic_order_time = QTime.currentTime().toString("hhmm")
             # 자동 주문 실행
             # 1100은 11시 00분을 의미합니다.
+            print("current time: %d" % int(automatic_order_time))
             if self.is_automatic_order and int(automatic_order_time) >= 900 and int(automatic_order_time) <= 1530:
                 self.is_automatic_order = True
                 self.automatic_order()
@@ -206,7 +207,7 @@ class MyWindow(QMainWindow, form_class):
         dialog.exec_()
 
     def set_automated_stocks(self):
-        file_list = ["../data/buy_list.txt", "../data/sell_list.txt"]
+        file_list = ["../data/sell_list.txt", "../data/buy_list.txt"]
         automated_stocks = []
 
         try:
@@ -240,7 +241,7 @@ class MyWindow(QMainWindow, form_class):
         self.automatedStocksTable.resizeRowsToContents()
 
     def automatic_order(self):
-        file_list = ["../data/buy_list.txt", "../data/sell_list.txt"]
+        file_list = ["../data/sell_list.txt", "../data/buy_list.txt"]
         hoga_type_table = {'지정가': "00", '시장가': "03"}
         account = self.accountComboBox.currentText()
         automated_stocks = []
@@ -266,7 +267,7 @@ class MyWindow(QMainWindow, form_class):
         sell_result = []
 
         for i in range(cnt):
-            time.sleep(0.5)
+            time.sleep(0.3)
             stocks = automated_stocks[i].split(';')
 
             code = stocks[1]
@@ -302,7 +303,6 @@ class MyWindow(QMainWindow, form_class):
                 elif stocks[5].rstrip() == '매도완료':
                     sell_result += automated_stocks[i]
 
-
             except (ParameterTypeError, KiwoomProcessingError) as e:
                 self.show_dialog('Critical', e)
 
@@ -310,7 +310,7 @@ class MyWindow(QMainWindow, form_class):
         self.inquiry_balance()
 
         # 결과저장하기
-        for file, result in zip(file_list, [buy_result, sell_result]):
+        for file, result in zip(file_list, [sell_result, buy_result]):
             with open(file, 'wt') as f:
                 for data in result:
                     f.write(data)
