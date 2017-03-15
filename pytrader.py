@@ -39,7 +39,7 @@ class MyWindow(QMainWindow, form_class):
 
         # 자동 주문
         self.timer_stock = QTimer(self)
-        self.timer_stock.start(1000*200)
+        self.timer_stock.start(1000*201)
         self.timer_stock.timeout.connect(self.timeout)
 
         # 잔고 및 보유종목 조회 타이머
@@ -62,40 +62,31 @@ class MyWindow(QMainWindow, form_class):
 
     def timeout(self):
         """ 타임아웃 이벤트가 발생하면 호출되는 메서드 """
-
         # 어떤 타이머에 의해서 호출되었는지 확인
         sender = self.sender()
-
         # 메인 타이머
         if id(sender) == id(self.timer):
             current_time = QTime.currentTime().toString("hh:mm:ss")
-
             # 상태바 설정
             state = ""
-
             if self.kiwoom.get_connect_state() == 1:
-
                 state = self.server_gubun + " 서버 연결중"
             else:
                 state = "서버 미연결"
-
             self.statusbar.showMessage("현재시간: " + current_time + " | " + state)
-
             # log
             if self.kiwoom.msg:
                 self.logTextEdit.append(self.kiwoom.msg)
                 self.kiwoom.msg = ""
-
         elif id(sender) == id(self.timer_stock):
             automatic_order_time = QTime.currentTime().toString("hhmm")
             # 자동 주문 실행
             # 1100은 11시 00분을 의미합니다.
             print("current time: %d" % int(automatic_order_time))
-            if self.is_automatic_order and int(automatic_order_time) >= 900 and int(automatic_order_time) <= 1530:
+            if self.is_automatic_order and int(automatic_order_time) >= 900 and int(automatic_order_time) <= 2330:
                 self.is_automatic_order = True
                 self.automatic_order()
                 self.set_automated_stocks()
-
         # 실시간 조회 타이머
         else:
             if self.realtimeCheckBox.isChecked():
@@ -132,7 +123,7 @@ class MyWindow(QMainWindow, form_class):
         price = self.priceSpinBox.value()
 
         try:
-            self.kiwoom.Send_order("수동주문", "0101", account, order_type, code, qty, price, hoga_type, "")
+            self.kiwoom.send_order("수동주문", "0101", account, order_type, code, qty, price, hoga_type, "")
         except (ParameterTypeError, KiwoomProcessingError) as e:
             self.show_dialog('Critical', e)
 
@@ -256,8 +247,8 @@ class MyWindow(QMainWindow, form_class):
                     automated_stocks += stocks_list
         except Exception as e:
             print(e)
-            e.msg = "automatic_order() 에러"
-            self.show_dialog('Critical', e)
+            #e.msg = "automatic_order() 에러"
+            #self.show_dialog('Critical', e)
             return
 
         cnt = len(automated_stocks)
@@ -304,7 +295,8 @@ class MyWindow(QMainWindow, form_class):
                     sell_result += automated_stocks[i]
 
             except (ParameterTypeError, KiwoomProcessingError) as e:
-                self.show_dialog('Critical', e)
+                #self.show_dialog('Critical', e)
+                print(e)
 
         # 잔고및 보유종목 디스플레이 갱신
         self.inquiry_balance()

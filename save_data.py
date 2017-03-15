@@ -46,7 +46,7 @@ class DailyData:
         data = pd.concat([data_81, data_86.loc[:, col_86]], axis=1)
         con = sqlite3.connect("../data/stock.db")
         try:
-            data = data.loc[data.index > self.kiwoom.start_date.strftime("%Y%m%d")]
+            #data = data.loc[data.index > self.kiwoom.start_date.strftime("%Y%m%d")]
             orig_data = pd.read_sql("SELECT * FROM '%s'" % code, con, index_col='일자').sort_index()
             end_date = orig_data.index[-1]
             orig_data = orig_data.loc[orig_data.index < end_date]
