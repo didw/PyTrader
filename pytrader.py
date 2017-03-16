@@ -39,7 +39,7 @@ class MyWindow(QMainWindow, form_class):
 
         # 자동 주문
         self.timer_stock = QTimer(self)
-        self.timer_stock.start(1000*201)
+        self.timer_stock.start(1000*21)
         self.timer_stock.timeout.connect(self.timeout)
 
         # 잔고 및 보유종목 조회 타이머
@@ -55,6 +55,7 @@ class MyWindow(QMainWindow, form_class):
         # 자동 주문
         # 자동 주문을 활성화 하려면 True로 설정
         self.is_automatic_order = True
+        self.in_processing = False
 
         # 자동 선정 종목 리스트 테이블 설정
         self.set_automated_stocks()
@@ -64,6 +65,8 @@ class MyWindow(QMainWindow, form_class):
         """ 타임아웃 이벤트가 발생하면 호출되는 메서드 """
         # 어떤 타이머에 의해서 호출되었는지 확인
         sender = self.sender()
+        if self.in_processing:
+            return
         # 메인 타이머
         if id(sender) == id(self.timer):
             current_time = QTime.currentTime().toString("hh:mm:ss")
@@ -83,7 +86,7 @@ class MyWindow(QMainWindow, form_class):
             # 자동 주문 실행
             # 1100은 11시 00분을 의미합니다.
             print("current time: %d" % int(automatic_order_time))
-            if self.is_automatic_order and int(automatic_order_time) >= 900 and int(automatic_order_time) <= 2330:
+            if self.is_automatic_order and int(automatic_order_time) >= 900 and int(automatic_order_time) <= 1530:
                 self.is_automatic_order = True
                 self.automatic_order()
                 self.set_automated_stocks()
@@ -129,8 +132,10 @@ class MyWindow(QMainWindow, form_class):
 
     def inquiry_balance(self):
         """ 예수금상세현황과 계좌평가잔고내역을 요청후 테이블에 출력한다. """
+        self.in_processing = True
+        #self.inquiryTimer.stop()
+        #self.timer_stock.stop()
 
-        self.inquiryTimer.stop()
         try:
             # 예수금상세현황요청
             self.kiwoom.set_input_value("계좌번호", self.accountComboBox.currentText())
@@ -183,8 +188,11 @@ class MyWindow(QMainWindow, form_class):
         # 데이터 초기화
         self.kiwoom.opw_data_reset()
 
+        self.in_processing = False
         # inquiryTimer 재시작
-        self.inquiryTimer.start(1000*10)
+        #self.inquiryTimer.start(1000*10)
+        #self.timer_stock.start(1000*100)
+
 
     # 경고창
     def show_dialog(self, grade, error):
@@ -205,7 +213,7 @@ class MyWindow(QMainWindow, form_class):
             for file in file_list:
                 # utf-8로 작성된 파일을
                 # cp949 환경에서 읽기위해서 encoding 지정
-                with open(file, 'rt') as f:
+                with open(file, 'rt', encoding='utf-8') as f:
                     stocks_list = f.readlines()
                     automated_stocks += stocks_list
         except Exception as e:
@@ -236,13 +244,13 @@ class MyWindow(QMainWindow, form_class):
         hoga_type_table = {'지정가': "00", '시장가': "03"}
         account = self.accountComboBox.currentText()
         automated_stocks = []
-
+        self.in_processing = True
         # 파일읽기
         try:
             for file in file_list:
                 # utf-8로 작성된 파일을
                 # cp949 환경에서 읽기위해서 encoding 지정
-                with open(file, 'rt') as f:
+                with open(file, 'rt', encoding='utf-8') as f:
                     stocks_list = f.readlines()
                     automated_stocks += stocks_list
         except Exception as e:
@@ -269,10 +277,11 @@ class MyWindow(QMainWindow, form_class):
             try:
                 if stocks[5].rstrip() == '매수전':
                     self.kiwoom.send_order("자동매수주문", "0101", account, 1, code, int(qty), int(price), hoga_type_table[hoga], "")
+                    print("order_no: ", self.kiwoom.order_no)
 
                     # 주문 접수시
                     if self.kiwoom.order_no:
-                        buy_result += automated_stocks[i].replace("매수전", "매수주문완료")
+                        buy_result += automated_stocks[i].replace("매수전", "매수완료")
                         self.kiwoom.order_no = ""
                     # 주문 미접수시
                     else:
@@ -280,11 +289,12 @@ class MyWindow(QMainWindow, form_class):
 
                 # 참고: 해당 종목을 현재도 보유하고 있다고 가정함.
                 elif stocks[5].rstrip() == '매도전':
-                    self.kiwoom.send_order("자동매도주문", "0101", account, 2, code, int(qty), int(price), hoga_type_table[hoga], "")
+                    self.kiwoom.send_order("자동매도주문", "0101", account, 2, code, 1, 1, hoga_type_table[hoga], "")
+                    print("order_no: ", self.kiwoom.order_no)
 
                     # 주문 접수시
                     if self.kiwoom.order_no:
-                        sell_result += automated_stocks[i].replace("매도전", "매도주문완료")
+                        sell_result += automated_stocks[i].replace("매도전", "매도완료")
                         self.kiwoom.order_no = ""
                     # 주문 미접수시
                     else:
@@ -303,9 +313,10 @@ class MyWindow(QMainWindow, form_class):
 
         # 결과저장하기
         for file, result in zip(file_list, [sell_result, buy_result]):
-            with open(file, 'wt') as f:
+            with open(file, 'wt', encoding='utf-8') as f:
                 for data in result:
                     f.write(data)
+        self.in_processing = False
 
 
 if __name__ == "__main__":

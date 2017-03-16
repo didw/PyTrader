@@ -125,7 +125,7 @@ class Kiwoom(QAxWidget):
         :param tr_code: string
         :param msg: string - 서버로 부터의 메시지
         """
-
+        print(msg)
         if request_name == "서버구분":
 
             if msg.find('모의투자') < 0:
