@@ -289,7 +289,7 @@ class MyWindow(QMainWindow, form_class):
 
                 # 참고: 해당 종목을 현재도 보유하고 있다고 가정함.
                 elif stocks[5].rstrip() == '매도전':
-                    self.kiwoom.send_order("자동매도주문", "0101", account, 2, code, 1, 1, hoga_type_table[hoga], "")
+                    self.kiwoom.send_order("자동매도주문", "0101", account, 2, code, int(qty), 0, hoga_type_table[hoga], "")
                     print("order_no: ", self.kiwoom.order_no)
 
                     # 주문 접수시
