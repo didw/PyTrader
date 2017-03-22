@@ -44,10 +44,11 @@ class DailyData:
         col_86 = ['전일비', '등락률', '금액(백만)', '신용비', '개인', '기관', '외인수량', '외국계', '프로그램',
                   '외인비', '체결강도', '외인보유', '외인비중', '외인순매수', '기관순매수', '개인순매수', '신용잔고율']
         data = pd.concat([data_81, data_86.loc[:, col_86]], axis=1)
-        con = sqlite3.connect("../data/stock.db")
+        #con = sqlite3.connect("../data/stock.db")
         try:
             data = data.loc[data.index > self.kiwoom.start_date.strftime("%Y%m%d")]
-            orig_data = pd.read_sql("SELECT * FROM '%s'" % code, con, index_col='일자').sort_index()
+            #orig_data = pd.read_sql("SELECT * FROM '%s'" % code, con, index_col='일자').sort_index()
+            orig_data = pd.read_hdf("../data/stock/%s.hdf" % code, 'day').sort_index()
             end_date = orig_data.index[-1]
             orig_data = orig_data.loc[orig_data.index < end_date]
             data = data.loc[data.index >= end_date]
@@ -58,7 +59,8 @@ class DailyData:
         finally:
             data.index.name = '일자'
             if len(data) != 0:
-                data.to_sql(code, con, if_exists='replace')
+                #data.to_sql(code, con, if_exists='replace')
+                data.to_hdf('../data/stock/%s.hdf'%code, 'day', mode='w')
 
 
 if __name__ == '__main__':

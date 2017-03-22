@@ -851,7 +851,6 @@ class Kiwoom(QAxWidget):
             format_data = '{:-,d}'.format(d)
         elif percent == 1:
             f = float(data)
-            print("총수익률:", data)
             f -= 100
             format_data = '{:-,.2f}'.format(f)
         elif percent == 2:
