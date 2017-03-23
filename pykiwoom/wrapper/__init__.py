@@ -5,7 +5,7 @@ from datetime import datetime
 from PyQt5.QtWidgets import *
 import sqlite3
 
-TR_REQ_TIME_INTERVAL = 0.3
+TR_REQ_TIME_INTERVAL = 0.4
 
 app = QApplication(sys.argv)
 
