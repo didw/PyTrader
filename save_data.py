@@ -48,7 +48,7 @@ class DailyData:
         try:
             data = data.loc[data.index > int(self.kiwoom.start_date.strftime("%Y%m%d"))]
             #orig_data = pd.read_sql("SELECT * FROM '%s'" % code, con, index_col='일자').sort_index()
-            orig_data = pd.read_hdf("../data/hdf2/%s.hdf" % code, 'day').sort_index()
+            orig_data = pd.read_hdf("../data/hdf/%s.hdf" % code, 'day').sort_index()
             end_date = orig_data.index[-1]
             orig_data = orig_data.loc[orig_data.index < end_date]
             data = data.loc[data.index >= end_date]
@@ -60,7 +60,7 @@ class DailyData:
             data.index.name = '일자'
             if len(data) != 0:
                 #data.to_sql(code, con, if_exists='replace')
-                data.to_hdf('../data/hdf2/%s.hdf'%code, 'day', mode='w')
+                data.to_hdf('../data/hdf/%s.hdf'%code, 'day', mode='w')
 
 
 if __name__ == '__main__':

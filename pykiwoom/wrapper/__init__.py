@@ -15,7 +15,7 @@ class KiwoomWrapper:
 
     def get_data_opt10081(self, code, date='20161231'):
         try:
-            data = pd.read_hdf("../data/hdf2/%s.hdf" % code, 'day').sort_index()
+            data = pd.read_hdf("../data/hdf/%s.hdf" % code, 'day').sort_index()
             start = str(data.index[-2])
         except (FileNotFoundError, IndexError)  as e:
             start = "20010101"
@@ -37,7 +37,7 @@ class KiwoomWrapper:
 
     def get_data_opt10086(self, code, date):
         try:
-            data = pd.read_hdf("../data/hdf2/%s.hdf" % code, 'day').sort_index()
+            data = pd.read_hdf("../data/hdf/%s.hdf" % code, 'day').sort_index()
             start = str(data.index[-2])
         except (FileNotFoundError, IndexError) as e:
             start = "20010101"
