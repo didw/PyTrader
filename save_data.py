@@ -39,7 +39,10 @@ class DailyData:
             self.save_table(code, today)
 
     def save_table(self, code, date):
+        TR_REQ_TIME_INTERVAL = 0.5
+        time.sleep(TR_REQ_TIME_INTERVAL)
         data_81 = self.wrapper.get_data_opt10081(code, date)
+        time.sleep(TR_REQ_TIME_INTERVAL)
         data_86 = self.wrapper.get_data_opt10086(code, date)
         col_86 = ['전일비', '등락률', '금액(백만)', '신용비', '개인', '기관', '외인수량', '외국계', '프로그램',
                   '외인비', '체결강도', '외인보유', '외인비중', '외인순매수', '기관순매수', '개인순매수', '신용잔고율']
@@ -70,9 +73,9 @@ if __name__ == '__main__':
     
     daily_data.save_all_data()
 
-#    import glob
-#    import zipfile
-#    filelist = glob.glob('../data/hdf/*.hdf')
-#    with zipfile.ZipFile('../data/hdf.zip', 'w', zipfile.ZIP_DEFLATED) as myzip:
-#        for f in filelist:
-#            myzip.write(f)
+    import glob
+    import zipfile
+    filelist = glob.glob('../data/hdf/*.hdf')
+    with zipfile.ZipFile('../data/hdf.zip', 'w', zipfile.ZIP_DEFLATED) as myzip:
+        for f in filelist:
+            myzip.write(f)
