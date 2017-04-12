@@ -15,5 +15,7 @@
  - 장 개시 전 update_version.py를 실행하여 kiwoom HTS version을 업데이트
  - 장 개시 후 pytrader.py를 실행하면 buy_list에 있는 종목을 매수.
 
+!pytrader.png
+
 ## 참고사이트
  - [파이썬을 이용한 시스템 트레이딩(기초편)](https://wikidocs.net/book/110)
