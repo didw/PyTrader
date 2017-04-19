@@ -172,6 +172,7 @@ class MyWindow(QMainWindow, form_class):
         self.stocksTable.setRowCount(item_count)
 
         with open('../data/stocks_in_account.txt', 'wt', encoding='utf-8') as f_stock:
+            f_stock.write('%d\n'%self.kiwoom.data_opw00001)
             for i in range(item_count):
                 row = self.kiwoom.data_opw00018['stocks'][i]
                 for j in range(len(row)-1):
