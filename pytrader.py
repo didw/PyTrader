@@ -86,7 +86,7 @@ class MyWindow(QMainWindow, form_class):
             # 자동 주문 실행
             # 1100은 11시 00분을 의미합니다.
             print("current time: %d" % int(automatic_order_time))
-            if self.is_automatic_order and int(automatic_order_time) >= 900 and int(automatic_order_time) <= 1030:
+            if self.is_automatic_order and int(automatic_order_time) >= 900 and int(automatic_order_time) <= 930:
                 self.is_automatic_order = False
                 self.automatic_order()
                 self.set_automated_stocks()

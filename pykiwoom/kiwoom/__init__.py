@@ -185,9 +185,9 @@ class Kiwoom(QAxWidget):
 
         if request_name == "주식일봉차트조회요청":
             data = self.get_comm_data_ex(tr_code, "주식일봉차트조회")
-            data = list(map(lambda x: list(map(lambda y: y.replace('+','').replace('--','-'), x)), np.array(data)[:,1:8].tolist()))
-            data = list(map(lambda x: list(map(lambda y: int(y) if y != '' else 0, x)), data))
             if data is not None:
+                data = list(map(lambda x: list(map(lambda y: y.replace('+','').replace('--','-'), x)), np.array(data)[:,1:8].tolist()))
+                data = list(map(lambda x: list(map(lambda y: int(y) if y != '' else 0, x)), data))
                 self.data_opt10081.extend(data)
                 date = str(data[0][3])
                 dt = datetime.strptime(date, "%Y%m%d")
@@ -199,9 +199,9 @@ class Kiwoom(QAxWidget):
 
         if request_name == "일별주가요청":
             data = self.get_comm_data_ex(tr_code, "일별주가요청")
-            data = list(map(lambda x: list(map(lambda y: y.replace('+','').replace('--','-'), x)), data))
-            data = list(map(lambda x: list(map(lambda y: float(y) if y != '' else 0, x)), data))
             if data is not None:
+                data = list(map(lambda x: list(map(lambda y: y.replace('+','').replace('--','-'), x)), data))
+                data = list(map(lambda x: list(map(lambda y: float(y) if y != '' else 0, x)), data))
                 self.data_opt10086.extend(data)
                 date = str(int(data[0][0]))
                 dt = datetime.strptime(date, "%Y%m%d")

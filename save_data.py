@@ -23,23 +23,54 @@ class DailyData:
         self.kospi_codes = self.kiwoom.get_codelist_by_market(MARKET_KOSPI)
         self.kosdak_codes = self.kiwoom.get_codelist_by_market(MARKET_KOSDAK)
 
+    def check_recent_file(self, code):
+        import os
+        from time import strftime, gmtime, time
+        fname = '../data/hdf/%s.hdf'%code
+        try:
+            print(time() - os.path.getmtime(fname))
+            if (time() - os.path.getmtime(fname)) < 200000:
+                return True
+        except FileNotFoundError:
+            return False
+        return False
+
     def save_all_data(self):
         today = datetime.date.today().strftime("%Y%m%d")
         #today = datetime.date(2011,9,1).strftime("%Y%m%d")
         print(today, len(self.kosdak_codes), len(self.kospi_codes))
-        for code in self.kosdak_codes:
+
+        # load code list from account
+        DATA = []
+        with open('../data/stocks_in_account.txt', encoding='utf-8') as f_stocks:
+            for line in f_stocks.readlines():
+                data = line.split(',')
+                DATA.append([data[6].replace('A', ''), data[1], data[0]])
+        for idx, code in enumerate(DATA):
             if code == '':
                 continue
             print("get data of %s" % code)
-            self.save_table(code, today)
+            if self.check_recent_file(code[0]): continue
+            self.save_table(code[0], today)
+
         for code in self.kospi_codes:
             if code == '':
                 continue
             print("get data of %s" % code)
+            if self.check_recent_file(code): continue
+            self.save_table(code, today)
+        for code in self.kosdak_codes:
+            if code == '':
+                continue
+            print("get data of %s" % code)
+            if self.check_recent_file(code): continue
             self.save_table(code, today)
 
     def save_table(self, code, date):
+        TR_REQ_TIME_INTERVAL = 4
+        time.sleep(TR_REQ_TIME_INTERVAL)
         data_81 = self.wrapper.get_data_opt10081(code, date)
+        time.sleep(TR_REQ_TIME_INTERVAL)
         data_86 = self.wrapper.get_data_opt10086(code, date)
         col_86 = ['전일비', '등락률', '금액(백만)', '신용비', '개인', '기관', '외인수량', '외국계', '프로그램',
                   '외인비', '체결강도', '외인보유', '외인비중', '외인순매수', '기관순매수', '개인순매수', '신용잔고율']
@@ -70,9 +101,9 @@ if __name__ == '__main__':
     
     daily_data.save_all_data()
 
-#    import glob
-#    import zipfile
-#    filelist = glob.glob('../data/hdf/*.hdf')
-#    with zipfile.ZipFile('../data/hdf.zip', 'w', zipfile.ZIP_DEFLATED) as myzip:
-#        for f in filelist:
-#            myzip.write(f)
+    import glob
+    import zipfile
+    filelist = glob.glob('../data/hdf/*.hdf')
+    with zipfile.ZipFile('../data/hdf.zip', 'w', zipfile.ZIP_DEFLATED) as myzip:
+        for f in filelist:
+            myzip.write(f)
