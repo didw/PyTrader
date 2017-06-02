@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>877</width>
-    <height>581</height>
+    <width>903</width>
+    <height>580</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -235,7 +235,7 @@
      <rect>
       <x>209</x>
       <y>19</y>
-      <width>651</width>
+      <width>681</width>
       <height>311</height>
      </rect>
     </property>
@@ -247,7 +247,7 @@
       <rect>
        <x>15</x>
        <y>21</y>
-       <width>621</width>
+       <width>651</width>
        <height>51</height>
       </rect>
      </property>
@@ -291,7 +291,7 @@
       <rect>
        <x>15</x>
        <y>81</y>
-       <width>621</width>
+       <width>651</width>
        <height>181</height>
       </rect>
      </property>
@@ -329,8 +329,8 @@
     <widget class="QCheckBox" name="realtimeCheckBox">
      <property name="geometry">
       <rect>
-       <x>470</x>
-       <y>279</y>
+       <x>500</x>
+       <y>280</y>
        <width>81</width>
        <height>20</height>
       </rect>
@@ -342,7 +342,7 @@
     <widget class="QPushButton" name="inquiryBtn">
      <property name="geometry">
       <rect>
-       <x>560</x>
+       <x>590</x>
        <y>270</y>
        <width>75</width>
        <height>31</height>
@@ -358,7 +358,7 @@
      <rect>
       <x>209</x>
       <y>329</y>
-      <width>651</width>
+      <width>681</width>
       <height>211</height>
      </rect>
     </property>
@@ -370,7 +370,7 @@
       <rect>
        <x>15</x>
        <y>21</y>
-       <width>621</width>
+       <width>651</width>
        <height>171</height>
       </rect>
      </property>
@@ -435,7 +435,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>877</width>
+     <width>903</width>
      <height>21</height>
     </rect>
    </property>

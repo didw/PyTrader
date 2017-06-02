@@ -5,7 +5,7 @@ from datetime import datetime
 from PyQt5.QtWidgets import *
 import sqlite3
 
-TR_REQ_TIME_INTERVAL = 0.3
+TR_REQ_TIME_INTERVAL = 4
 
 app = QApplication(sys.argv)
 
@@ -14,11 +14,10 @@ class KiwoomWrapper:
         self.kiwoom = kiwoom
 
     def get_data_opt10081(self, code, date='20161231'):
-        con = sqlite3.connect("stock.db")
         try:
-            data = pd.read_sql("SELECT * from '%s'" % code, con, index_col='일자').sort_index()
-            start = data.index[-2]
-        except (pd.io.sql.DatabaseError, IndexError)  as e:
+            data = pd.read_hdf("../data/hdf/%s.hdf" % code, 'day').sort_index()
+            start = str(data.index[-2])
+        except (FileNotFoundError, IndexError)  as e:
             start = "20010101"
         print("get 81 data from %s" % start)
         self.kiwoom.start_date = datetime.strptime(start, "%Y%m%d")
@@ -37,11 +36,10 @@ class KiwoomWrapper:
         return self.kiwoom.data_opt10081.loc[:, ['현재가', '거래량', '거래대금', '시가', '고가', '저가']]
 
     def get_data_opt10086(self, code, date):
-        con = sqlite3.connect("stock.db")
         try:
-            data = pd.read_sql("SELECT * from '%s'" % code, con, index_col='일자').sort_index()
-            start = data.index[-2]
-        except pd.io.sql.DatabaseError as e:
+            data = pd.read_hdf("../data/hdf/%s.hdf" % code, 'day').sort_index()
+            start = str(data.index[-2])
+        except (FileNotFoundError, IndexError) as e:
             start = "20010101"
         print("get 86 data from %s" % start)
         self.kiwoom.start_date = datetime.strptime(start, "%Y%m%d")

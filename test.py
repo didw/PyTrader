@@ -1,5 +1,7 @@
+# -*- encoding: utf-8 -*-
 import pandas as pd
 import sqlite3
+import glob
 
 def test_dataframe_replace():
     a = pd.DataFrame([{'a': '20170102', 'b': '--10', 'c': '+20'}, {'a': '20170103', 'b': '--20', 'c': '--20'}])
@@ -49,5 +51,37 @@ def delete_table(table_name):
     con = sqlite3.connect("stock.db")
     con.execute("DROP TABLE '%s'" % table_name)
 
+def print_table_columns():
+    con = sqlite3.connect("../data/stock.db")
+    code_list = con.execute("SELECT name from sqlite_master WHERE type='table'").fetchall()
+    code = code_list[0][0]
+    data = pd.read_sql("SELECT * from '%s'" % code, con, index_col='일자')
+    print(data.columns)
+
+def print_table_tail():
+    con = sqlite3.connect("../data/stock.db")
+    code_list = con.execute("SELECT name from sqlite_master WHERE type='table'").fetchall()
+    code = code_list[0][0]
+    for code in code_list:
+        code = code[0]
+        data = pd.read_sql("SELECT * from '%s'" % code, con, index_col='일자')
+        print(data.index[len(data)-3:len(data)])
+
+def convert_sql_h5():
+    con = sqlite3.connect("../data/stock.db")
+    code_list = con.execute("SELECT name from sqlite_master WHERE type='table'").fetchall()
+    for code in code_list:
+        code = code[0]
+        data = pd.read_sql("SELECT * from '%s'" % code, con, index_col='일자')
+        data.to_hdf('../data/stock/%s.h5'%code,'table',append=True)
+
+def read_h5():
+    code_list = glob.glob('../data/stock/*.h5')
+    for code in code_list[:10]:
+        data = pd.read_hdf(code, 'table').sort_index()
+        data = data.loc[data.index >= str(20160101)]
+        data = data.loc[data.index <= str(20160630)]
+        print(data.head())
+
 if __name__ == '__main__':
-    delete_table('000040')
+    read_h5()

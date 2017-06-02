@@ -186,29 +186,31 @@ class Kiwoom(QAxWidget):
         if request_name == "주식일봉차트조회요청":
             data = self.get_comm_data_ex(tr_code, "주식일봉차트조회")
             if data is not None:
+                data = list(map(lambda x: list(map(lambda y: y.replace('+','').replace('--','-'), x)), np.array(data)[:,1:8].tolist()))
+                data = list(map(lambda x: list(map(lambda y: int(y) if y != '' else 0, x)), data))
                 self.data_opt10081.extend(data)
-                date = data[0][4]
+                date = str(data[0][3])
                 dt = datetime.strptime(date, "%Y%m%d")
                 if dt <= self.start_date:
                     self.inquiry = 0
             if inquiry == "0" or self.inquiry == 0:
-                col_name = ['종목코드', '현재가', '거래량', '거래대금', '일자', '시가', '고가', '저가',
-                            '수정주가구분', '수정비율', '대업종구분', '소업종구분', '종목정보', '수정주가이벤트', '전일종가']
+                col_name = ['현재가', '거래량', '거래대금', '일자', '시가', '고가', '저가']
                 self.data_opt10081 = DataFrame(self.data_opt10081, columns=col_name)
 
         if request_name == "일별주가요청":
             data = self.get_comm_data_ex(tr_code, "일별주가요청")
             if data is not None:
+                data = list(map(lambda x: list(map(lambda y: y.replace('+','').replace('--','-'), x)), data))
+                data = list(map(lambda x: list(map(lambda y: float(y) if y != '' else 0, x)), data))
                 self.data_opt10086.extend(data)
-                date = data[0][0]
+                date = str(int(data[0][0]))
                 dt = datetime.strptime(date, "%Y%m%d")
                 if dt <= self.start_date:
                     self.inquiry = 0
             if inquiry == "0" or self.inquiry == 0:
-                col_name = ['일자', '시가', '고가', '저가', '종가', '전일비', '등락률', '거래량',
-                            '금액(백만)', '신용비', '개인', '기관', '외인수량', '외국계', '프로그램',
-                            '외인비', '체결강도', '외인보유', '외인비중', '외인순매수', '기관순매수',
-                            '개인순매수', '신용잔고율']
+                col_name = ['일자', '시가', '고가', '저가', '종가', '전일비', '등락률', '거래량', '금액(백만)', '신용비', '개인',
+                            '기관', '외인수량', '외국계', '프로그램', '외인비', '체결강도', '외인보유', '외인비중', '외인순매수',
+                            '기관순매수', '개인순매수', '신용잔고율']
                 self.data_opt10086 = DataFrame(self.data_opt10086, columns=col_name)
 
         if request_name == "예수금상세현황요청":
