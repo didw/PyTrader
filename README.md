@@ -6,16 +6,19 @@
 
 ## 로그인설정
  - account.txt에 로그인정보 입력
-  - 사용자id
-  - 로그인 pw
-  - 공인인증서 pw
+ - 사용자id
+ - 로그인 pw
+ - 공인인증서 pw
 
 ## 사용법
- - 장 개시 전 pymon.py를 실행하여 매수할 종목을 선정. 매수할 종목은 buy_list.txt에 기록됨. (현재는 배당률 기반 투자전략 알고리즘을 사용)
- - 장 개시 전 update_version.py를 실행하여 kiwoom HTS version을 업데이트
- - 장 개시 후 pytrader.py를 실행하면 buy_list에 있는 종목을 매수.
+ - 장 개시 전 매수할 종목을 buy_list.txt에 매도할 종목을 sell_list.txt에 기록.
+ - 장 개시 후 pytrader.py를 실행하면 buy_list.txt에 있는 종목을 매수, sell_list.txt에 있는 종목을 매도.
 
 ![pytrader](pytrader.png)
 
+## 딥러닝을 이용한 매수/매도 종목 선정
+ - [PyMLT](https://github.com/didw/PyMLT)
+
 ## 참고사이트
  - [파이썬을 이용한 시스템 트레이딩(기초편)](https://wikidocs.net/book/110)
+
